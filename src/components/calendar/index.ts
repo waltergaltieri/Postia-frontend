@@ -1,0 +1,1 @@
+export { PublicationDetailModal } from './PublicationDetailModal'

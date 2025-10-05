@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Postia Frontend
 
-## Getting Started
+Plataforma de generación de contenido con IA para agencias de marketing.
 
-First, run the development server:
+## Tecnologías
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 14+** - Framework React con App Router
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Utility-first CSS framework
+- **Redux Toolkit** - State management
+- **React Hook Form** - Form handling
+- **Zod** - Schema validation
+- **React Hot Toast** - Notifications
+
+## Estructura del Proyecto
+
+```
+src/
+├── app/                    # Next.js App Router
+├── components/            # Componentes reutilizables
+│   ├── common/           # Componentes base (Button, Input, Modal)
+│   ├── dashboard/        # Componentes del dashboard
+│   ├── campaigns/        # Componentes de campañas
+│   ├── resources/        # Gestión de recursos
+│   ├── templates/        # Gestión de templates
+│   └── calendar/         # Componentes del calendario
+├── layouts/              # Layouts de la aplicación
+├── store/                # Redux store
+│   ├── api/             # RTK Query APIs
+│   └── slices/          # Redux slices
+├── hooks/                # Custom hooks
+├── utils/                # Funciones utilitarias
+├── types/                # Definiciones de tipos TypeScript
+└── styles/               # Estilos globales
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts Disponibles
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Desarrollo
+npm run dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Build de producción
+npm run build
 
-## Learn More
+# Iniciar servidor de producción
+npm run start
 
-To learn more about Next.js, take a look at the following resources:
+# Linting
+npm run lint
+npm run lint:fix
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Formateo de código
+npm run format
+npm run format:check
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Verificación de tipos
+npm run type-check
 
-## Deploy on Vercel
+# Limpiar archivos de build
+npm run clean
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Configuración
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### ESLint + Prettier
+
+El proyecto está configurado con ESLint y Prettier para mantener la calidad y consistencia del código.
+
+### Tailwind CSS
+
+Configurado con:
+
+- Colores personalizados para la marca
+- Utilidades adicionales
+- Componentes base reutilizables
+- Responsive design
+
+### Redux Toolkit
+
+- Store configurado con RTK Query para data fetching
+- Slices organizados por funcionalidad
+- Middleware configurado para serialización
+
+## Desarrollo
+
+1. Instalar dependencias:
+
+   ```bash
+   npm install
+   ```
+
+2. Iniciar servidor de desarrollo:
+
+   ```bash
+   npm run dev
+   ```
+
+3. Abrir [http://localhost:3000](http://localhost:3000) en el navegador
+
+## Próximos Pasos
+
+Este es el setup inicial del proyecto. Los siguientes tasks implementarán:
+
+1. Componentes base de UI
+2. Sistema de autenticación
+3. Layouts y navegación
+4. Gestión de workspaces
+5. Sistema de recursos y templates
+6. Creación de campañas
+7. Calendario de publicaciones
+8. Configuraciones y settings

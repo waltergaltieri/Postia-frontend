@@ -1,0 +1,315 @@
+/* FullCalendar Custom Styles for Postia */
+
+/* Main calendar container */
+.fc {
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* Grid and borders */
+.fc-theme-standard .fc-scrollgrid {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.fc-theme-standard td, 
+.fc-theme-standard th {
+  border-color: #e5e7eb;
+}
+
+/* Header styling */
+.fc-col-header-cell {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  padding: 12px 8px;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+/* Day cells */
+.fc-daygrid-day {
+  background-color: #ffffff;
+  transition: background-color 0.2s ease;
+}
+
+.fc-daygrid-day:hover {
+  background-color: #f9fafb;
+}
+
+.fc-daygrid-day-number {
+  color: #374151;
+  font-weight: 500;
+  padding: 8px;
+  font-size: 14px;
+}
+
+/* Today highlighting */
+.fc-day-today {
+  background-color: #fef3c7 !important;
+}
+
+.fc-day-today .fc-daygrid-day-number {
+  color: #92400e;
+  font-weight: 700;
+  background-color: #f59e0b;
+  color: white;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px;
+}
+
+/* Events styling */
+.fc-event {
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 3px 8px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  margin: 2px 4px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.fc-event:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+.fc-event-title {
+  font-weight: 500 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Toolbar styling */
+.fc-toolbar {
+  margin-bottom: 1.5rem !important;
+  gap: 1rem;
+}
+
+.fc-toolbar-title {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  text-transform: capitalize;
+}
+
+/* Button styling */
+.fc-button {
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.fc-button:hover {
+  background-color: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.fc-button:focus {
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.2) !important;
+  outline: none !important;
+}
+
+.fc-button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.fc-button-active {
+  background-color: #9333ea !important;
+  border-color: #9333ea !important;
+  color: #ffffff !important;
+}
+
+.fc-button-active:hover {
+  background-color: #7c3aed !important;
+  border-color: #7c3aed !important;
+}
+
+/* More link styling */
+.fc-more-link {
+  color: #9333ea !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  background-color: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  transition: all 0.2s ease !important;
+}
+
+.fc-more-link:hover {
+  background-color: #9333ea !important;
+  color: white !important;
+  border-color: #9333ea !important;
+}
+
+/* Popover styling */
+.fc-popover {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  background-color: white !important;
+}
+
+.fc-popover-header {
+  background-color: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 12px 16px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.fc-popover-body {
+  padding: 8px !important;
+}
+
+/* Time grid specific styles */
+.fc-timegrid-slot {
+  height: 3rem !important;
+  border-color: #f3f4f6 !important;
+}
+
+.fc-timegrid-slot-label {
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 0 8px !important;
+}
+
+.fc-timegrid-axis {
+  background-color: #f9fafb !important;
+}
+
+.fc-timegrid-col {
+  background-color: #ffffff;
+}
+
+.fc-timegrid-col:hover {
+  background-color: #fafafa;
+}
+
+/* Week view specific */
+.fc-col-header {
+  background-color: #f9fafb !important;
+}
+
+/* Event colors for different social networks */
+.fc-event-instagram {
+  background: linear-gradient(135deg, #e1306c, #fd1d1d, #fcb045) !important;
+  border: none !important;
+  color: white !important;
+}
+
+.fc-event-facebook {
+  background-color: #1877f2 !important;
+  border-color: #1877f2 !important;
+  color: white !important;
+}
+
+.fc-event-linkedin {
+  background-color: #0a66c2 !important;
+  border-color: #0a66c2 !important;
+  color: white !important;
+}
+
+.fc-event-twitter {
+  background-color: #1da1f2 !important;
+  border-color: #1da1f2 !important;
+  color: white !important;
+}
+
+/* Hover effects for social network events */
+.fc-event-instagram:hover {
+  background: linear-gradient(135deg, #c13584, #e1306c, #fd1d1d) !important;
+}
+
+.fc-event-facebook:hover {
+  background-color: #166fe5 !important;
+}
+
+.fc-event-linkedin:hover {
+  background-color: #095bb0 !important;
+}
+
+.fc-event-twitter:hover {
+  background-color: #1a91da !important;
+}
+
+/* Instagram gradient for legend */
+.instagram-gradient {
+  background: linear-gradient(135deg, #e1306c, #fd1d1d, #fcb045);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .fc-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .fc-button {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+  
+  .fc-toolbar-title {
+    font-size: 1.25rem !important;
+    margin: 0.5rem 0 !important;
+  }
+  
+  .fc-event {
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+  }
+}
+
+/* Loading state */
+.fc-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Custom scrollbar for time grid */
+.fc-scroller::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fc-scroller::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

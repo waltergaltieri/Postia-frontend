@@ -1,0 +1,25 @@
+/* Branding page specific styles */
+
+.branding-preview-card {
+  transition: all 0.3s ease;
+  border-color: var(--preview-primary-color);
+  background-color: var(--preview-primary-bg);
+}
+
+.branding-logo-container {
+  background-color: white;
+  border-color: var(--preview-primary-color);
+}
+
+.branding-primary-text {
+  color: var(--preview-primary-color);
+}
+
+.branding-secondary-text {
+  color: var(--preview-secondary-color);
+}
+
+.branding-color-preview {
+  background-color: var(--preview-color);
+  border: 1px solid #e5e5e5;
+}
