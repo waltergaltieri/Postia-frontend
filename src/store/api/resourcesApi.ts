@@ -79,8 +79,9 @@ export const resourcesApi = createApi({
         const formData = new FormData()
         formData.append('workspaceId', params.workspaceId)
 
-        params.files.forEach(fileData => {
+        params.files.forEach((fileData, index) => {
           formData.append('files', fileData.file)
+          formData.append(`names[${index}]`, fileData.name)
         })
 
         return {

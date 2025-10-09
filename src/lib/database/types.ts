@@ -101,6 +101,21 @@ export interface Campaign {
   status: 'draft' | 'active' | 'completed' | 'paused'
   createdAt: Date
   updatedAt: Date
+
+  // AI Content Generation fields
+  shortPrompt?: string              // Objetivo corto de la campaña
+  longPrompt?: string               // Descripción detallada para IA
+  selectedResources?: string[]      // IDs de recursos seleccionados
+  selectedTemplates?: string[]      // IDs de templates seleccionados
+  platformDistribution?: {         // Distribución de contenido por plataforma
+    instagram?: number
+    linkedin?: number
+    twitter?: number
+    facebook?: number
+  }
+  publicationsPerDay?: number       // Publicaciones por día
+  intervalDays?: number             // Intervalo entre publicaciones
+  generationStatus?: 'configuring' | 'descriptions_generated' | 'content_generating' | 'completed'
 }
 
 export interface Publication {
@@ -118,6 +133,19 @@ export interface Publication {
   externalPostId?: string
   createdAt: Date
   updatedAt: Date
+
+  // AI Content Generation fields
+  contentDescriptionId?: string     // Referencia a la descripción
+  generatedText?: string            // Texto generado por IA
+  generatedImageUrl?: string        // URL de imagen generada
+  generationMetadata?: {            // Metadatos del proceso de generación
+    textPrompt?: string
+    imagePrompt?: string
+    templateUsed?: string
+    resourcesUsed?: string[]
+    generationTime?: Date
+    retryCount?: number
+  }
 }
 
 export interface OptimizationSettings {
@@ -137,6 +165,39 @@ export interface OptimizationSettings {
     tone: string
     hashtags: boolean
   }
+}
+
+// New interfaces for AI Content Generation
+
+export interface ContentDescription {
+  id: string
+  campaignId: string
+  platform: SocialNetwork
+  scheduledDate: Date
+  contentType: 'text_simple' | 'text_image_simple' | 'text_image_template' | 'carousel'
+  description: string              // Descripción generada por IA
+  templateId?: string              // Si usa template
+  resourceIds: string[]            // Recursos a usar
+  status: 'pending' | 'approved' | 'regenerating' | 'generated'
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface BrandManual {
+  id: string
+  workspaceId: string
+  brandVoice: string               // Tono de voz de la marca
+  brandValues: string[]            // Valores de la marca
+  targetAudience: string           // Audiencia objetivo
+  keyMessages: string[]            // Mensajes clave
+  dosDonts: {                      // Qué hacer y qué no hacer
+    dos: string[]
+    donts: string[]
+  }
+  colorPalette: string[]           // Paleta de colores
+  typography?: string              // Tipografía preferida
+  createdAt: Date
+  updatedAt: Date
 }
 
 // Create/Update types (omit id, createdAt, updatedAt)
@@ -198,6 +259,22 @@ export type UpdatePublicationData = Partial<
   Omit<Publication, 'id' | 'createdAt' | 'updatedAt'>
 >
 
+export type CreateContentDescriptionData = Omit<
+  ContentDescription,
+  'id' | 'createdAt' | 'updatedAt'
+>
+export type UpdateContentDescriptionData = Partial<
+  Omit<ContentDescription, 'id' | 'createdAt' | 'updatedAt'>
+>
+
+export type CreateBrandManualData = Omit<
+  BrandManual,
+  'id' | 'createdAt' | 'updatedAt'
+>
+export type UpdateBrandManualData = Partial<
+  Omit<BrandManual, 'id' | 'createdAt' | 'updatedAt'>
+>
+
 // Query options
 export interface QueryOptions {
   limit?: number
@@ -254,4 +331,17 @@ export interface SocialAccountFilters {
   workspaceId?: string
   platform?: SocialNetwork
   isConnected?: boolean
+}
+
+export interface ContentDescriptionFilters {
+  campaignId?: string
+  platform?: SocialNetwork
+  contentType?: 'text_simple' | 'text_image_simple' | 'text_image_template' | 'carousel'
+  status?: 'pending' | 'approved' | 'regenerating' | 'generated'
+  scheduledDateFrom?: Date
+  scheduledDateTo?: Date
+}
+
+export interface BrandManualFilters {
+  workspaceId?: string
 }

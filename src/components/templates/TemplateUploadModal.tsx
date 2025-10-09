@@ -29,17 +29,17 @@ import { SocialNetwork } from '@/types'
 import { cn } from '@/utils'
 import {
   HiUpload,
-  HiX,
   HiPhotograph,
   HiViewGrid,
   HiMenu,
   HiTrash,
+  HiPlus,
 } from 'react-icons/hi'
 import toast from 'react-hot-toast'
 
 const templateSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
-  type: z.enum(['single', 'carousel']),
+  type: z.enum(['single', 'carousel']).optional(),
   socialNetworks: z
     .array(z.enum(['facebook', 'instagram', 'twitter', 'linkedin']))
     .min(1, 'Selecciona al menos una red social'),
@@ -61,7 +61,7 @@ interface TemplateUploadModalProps {
     name: string
     type: 'single' | 'carousel'
     socialNetworks: SocialNetwork[]
-    images: { name: string; file: File }[]
+    images: { name: string; file: File; dataUrl?: string }[]
   }) => Promise<void>
   workspaceId: string
 }
@@ -90,9 +90,9 @@ function SortableImageItem({
 
   const style = transform
     ? {
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }
+      transform: CSS.Transform.toString(transform),
+      transition,
+    }
     : undefined
 
   const handleRename = () => {
@@ -116,7 +116,7 @@ function SortableImageItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-center space-x-3 p-3 bg-white border border-secondary-200 rounded-lg',
+        'flex items-center space-x-3 p-3 bg-white border border-secondary-200 rounded-lg flex-1',
         isDragging && 'opacity-50'
       )}
     >
@@ -199,6 +199,7 @@ export function TemplateUploadModal({
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<TemplateFormData>({
     resolver: zodResolver(templateSchema),
@@ -211,28 +212,25 @@ export function TemplateUploadModal({
 
   const templateType = watch('type')
 
-  const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
-      const newImages = acceptedFiles.map(file => ({
-        id: Math.random().toString(36).substr(2, 9),
-        file,
-        preview: URL.createObjectURL(file),
-        name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
-      }))
+  // Auto-determine template type based on number of images
+  React.useEffect(() => {
+    if (images.length > 1) {
+      setValue('type', 'carousel')
+    } else if (images.length === 1) {
+      setValue('type', 'single')
+    }
+  }, [images.length, setValue])
 
-      setImages(prev => {
-        if (templateType === 'single') {
-          // For single image templates, replace existing image
-          prev.forEach(img => URL.revokeObjectURL(img.preview))
-          return newImages.slice(0, 1)
-        } else {
-          // For carousel templates, add to existing images
-          return [...prev, ...newImages]
-        }
-      })
-    },
-    [templateType]
-  )
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const newImages = acceptedFiles.map(file => ({
+      id: Math.random().toString(36).substring(2, 11),
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+    }))
+
+    setImages(prev => [...prev, ...newImages])
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -240,7 +238,33 @@ export function TemplateUploadModal({
       'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'],
     },
     maxSize: 10 * 1024 * 1024, // 10MB
-    multiple: templateType === 'carousel',
+    multiple: true, // Always allow multiple files
+  })
+
+  // Function to add more images
+  const addMoreImages = useCallback((acceptedFiles: File[]) => {
+    const newImages = acceptedFiles.map(file => ({
+      id: Math.random().toString(36).substring(2, 11),
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name.replace(/\.[^/.]+$/, ''),
+    }))
+
+    setImages(prev => [...prev, ...newImages])
+  }, [])
+
+  const {
+    getRootProps: getAddMoreRootProps,
+    getInputProps: getAddMoreInputProps,
+    open: openAddMoreDialog
+  } = useDropzone({
+    onDrop: addMoreImages,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'],
+    },
+    maxSize: 10 * 1024 * 1024,
+    multiple: true,
+    noClick: true, // We'll handle clicks manually
   })
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -278,22 +302,48 @@ export function TemplateUploadModal({
       return
     }
 
-    if (data.type === 'single' && images.length > 1) {
-      toast.error('Los templates de imagen única solo pueden tener una imagen')
-      return
-    }
-
     setUploading(true)
     try {
-      await onUpload({
+      // Auto-determine type based on number of images
+      const finalType: 'single' | 'carousel' = images.length > 1 ? 'carousel' : 'single'
+
+      // Convert images to data URLs for temporary storage
+      console.log('Converting images to data URLs...')
+      const imageDataUrls = await Promise.all(
+        images.map(async (img) => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+              const dataUrl = e.target?.result as string
+              console.log('Generated data URL for:', img.name, dataUrl.substring(0, 50) + '...')
+              resolve(dataUrl)
+            }
+            reader.readAsDataURL(img.file)
+          })
+        })
+      )
+      console.log('All images converted to data URLs')
+
+      const templateData = {
         name: data.name,
-        type: data.type,
+        type: finalType,
         socialNetworks: data.socialNetworks,
-        images: images.map(img => ({
+        images: images.map((img, index) => ({
           name: img.name,
           file: img.file,
+          dataUrl: imageDataUrls[index], // Add data URL for preview
         })),
+      }
+
+      console.log('Sending template data:', {
+        ...templateData,
+        images: templateData.images.map(img => ({
+          name: img.name,
+          dataUrl: img.dataUrl?.substring(0, 50) + '...'
+        }))
       })
+
+      await onUpload(templateData)
 
       // Clean up
       images.forEach(img => URL.revokeObjectURL(img.preview))
@@ -318,30 +368,27 @@ export function TemplateUploadModal({
     }
   }
 
-  // Update images when template type changes
+  // Clean up object URLs on unmount
   React.useEffect(() => {
-    if (templateType === 'single' && images.length > 1) {
-      // Keep only the first image for single type
-      const imagesToRemove = images.slice(1)
-      imagesToRemove.forEach(img => URL.revokeObjectURL(img.preview))
-      setImages(prev => prev.slice(0, 1))
+    return () => {
+      images.forEach(img => URL.revokeObjectURL(img.preview))
     }
-  }, [templateType, images.length])
+  }, [])
 
   const socialNetworkOptions: {
     value: SocialNetwork
     label: string
     color: string
   }[] = [
-    { value: 'facebook', label: 'Facebook', color: 'bg-blue-600' },
-    {
-      value: 'instagram',
-      label: 'Instagram',
-      color: 'bg-gradient-to-br from-purple-600 to-pink-600',
-    },
-    { value: 'twitter', label: 'Twitter', color: 'bg-sky-500' },
-    { value: 'linkedin', label: 'LinkedIn', color: 'bg-blue-700' },
-  ]
+      { value: 'facebook', label: 'Facebook', color: 'bg-blue-600' },
+      {
+        value: 'instagram',
+        label: 'Instagram',
+        color: 'bg-gradient-to-br from-purple-600 to-pink-600',
+      },
+      { value: 'twitter', label: 'Twitter', color: 'bg-sky-500' },
+      { value: 'linkedin', label: 'LinkedIn', color: 'bg-blue-700' },
+    ]
 
   return (
     <Modal
@@ -350,7 +397,8 @@ export function TemplateUploadModal({
       title="Crear Nuevo Template"
       size="lg"
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Template Name */}
         <Controller
           name="name"
@@ -366,68 +414,53 @@ export function TemplateUploadModal({
           )}
         />
 
-        {/* Template Type */}
-        <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-3">
-            Tipo de Template *
-          </label>
-          <Controller
-            name="type"
-            control={control}
-            render={({ field }) => (
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => field.onChange('single')}
-                  className={cn(
-                    'p-4 border-2 rounded-lg text-center transition-colors',
-                    field.value === 'single'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-secondary-200 hover:border-secondary-300'
-                  )}
-                >
-                  <HiPhotograph className="w-8 h-8 mx-auto mb-2" />
-                  <div className="font-medium">Imagen Única</div>
-                  <div className="text-sm text-secondary-600 mt-1">
-                    Una sola imagen por publicación
+        {/* Template Type - Auto-determined */}
+        {images.length > 0 && (
+          <div className="py-2">
+            <label className="block text-sm font-medium text-secondary-700 mb-4">
+              Tipo de Template
+            </label>
+            <div className="flex items-center space-x-4 p-5 bg-secondary-50 rounded-lg">
+              {templateType === 'single' ? (
+                <>
+                  <HiPhotograph className="w-6 h-6 text-primary-600" />
+                  <div>
+                    <div className="font-medium text-secondary-900">Imagen Única</div>
+                    <div className="text-sm text-secondary-600">
+                      Una imagen por publicación
+                    </div>
                   </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => field.onChange('carousel')}
-                  className={cn(
-                    'p-4 border-2 rounded-lg text-center transition-colors',
-                    field.value === 'carousel'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-secondary-200 hover:border-secondary-300'
-                  )}
-                >
-                  <HiViewGrid className="w-8 h-8 mx-auto mb-2" />
-                  <div className="font-medium">Carrusel</div>
-                  <div className="text-sm text-secondary-600 mt-1">
-                    Múltiples imágenes deslizables
+                </>
+              ) : (
+                <>
+                  <HiViewGrid className="w-6 h-6 text-primary-600" />
+                  <div>
+                    <div className="font-medium text-secondary-900">Carrusel</div>
+                    <div className="text-sm text-secondary-600">
+                      {images.length} imágenes deslizables
+                    </div>
                   </div>
-                </button>
-              </div>
-            )}
-          />
-        </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Social Networks */}
-        <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-3">
+        <div className="py-2">
+          <label className="block text-sm font-medium text-secondary-700 mb-4">
             Redes Sociales *
           </label>
           <Controller
             name="socialNetworks"
             control={control}
             render={({ field }) => (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 {socialNetworkOptions.map(option => (
                   <label
                     key={option.value}
                     className={cn(
-                      'flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors',
+                      'flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors',
                       field.value.includes(option.value)
                         ? 'border-primary-500 bg-primary-50'
                         : 'border-secondary-200 hover:border-secondary-300'
@@ -463,97 +496,142 @@ export function TemplateUploadModal({
         </div>
 
         {/* Image Upload */}
-        <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-3">
+        <div className="py-2">
+          <label className="block text-sm font-medium text-secondary-700 mb-4">
             Imágenes *
           </label>
 
-          {/* Dropzone */}
-          <div
-            {...getRootProps()}
-            className={cn(
-              'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
-              isDragActive
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-secondary-300 hover:border-secondary-400'
-            )}
-          >
-            <input {...getInputProps()} />
-            <HiUpload className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
-            {isDragActive ? (
-              <p className="text-primary-600">Suelta las imágenes aquí...</p>
-            ) : (
-              <div>
-                <p className="text-secondary-600 mb-2">
-                  Arrastra y suelta imágenes aquí, o haz clic para seleccionar
-                </p>
-                <p className="text-sm text-secondary-500">
-                  {templateType === 'single'
-                    ? 'Solo se permite una imagen (máx. 10MB)'
-                    : 'Múltiples imágenes permitidas (máx. 10MB cada una)'}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Uploaded Images */}
-          {images.length > 0 && (
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium text-secondary-700">
-                  Imágenes subidas ({images.length})
-                </h4>
-                {templateType === 'carousel' && images.length > 1 && (
-                  <p className="text-xs text-secondary-500">
-                    Arrastra para reordenar
+          {images.length === 0 ? (
+            /* Initial Dropzone */
+            <div
+              {...getRootProps()}
+              className={cn(
+                'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
+                isDragActive
+                  ? 'border-primary-500 bg-primary-50'
+                  : 'border-secondary-300 hover:border-secondary-400'
+              )}
+            >
+              <input {...getInputProps()} />
+              <HiUpload className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
+              {isDragActive ? (
+                <p className="text-primary-600">Suelta las imágenes aquí...</p>
+              ) : (
+                <div>
+                  <p className="text-secondary-600 mb-2">
+                    Arrastra y suelta imágenes aquí, o haz clic para seleccionar
                   </p>
-                )}
+                  <p className="text-sm text-secondary-500">
+                    Sube una imagen para template único o múltiples para carrusel (máx. 10MB cada una)
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Image Preview and Management */
+            <div className="space-y-6">
+              {/* Image Preview Section */}
+              <div className="flex space-x-6">
+                {/* Main Preview */}
+                <div className="flex-1">
+                  <div className="aspect-square bg-secondary-100 rounded-lg overflow-hidden">
+                    <img
+                      src={images[0].preview}
+                      alt={images[0].name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Add More Images Button */}
+                <div className="flex-1">
+                  <div
+                    {...getAddMoreRootProps()}
+                    className={cn(
+                      'aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors',
+                      'border-secondary-300 hover:border-primary-400 hover:bg-primary-50'
+                    )}
+                    onClick={openAddMoreDialog}
+                  >
+                    <input {...getAddMoreInputProps()} />
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <HiPlus className="w-8 h-8 text-primary-600" />
+                      </div>
+                      <p className="text-sm font-medium text-secondary-700 mb-1">
+                        Agregar más imágenes
+                      </p>
+                      <p className="text-xs text-secondary-500">
+                        {images.length === 1 ? 'Crear carrusel' : 'Añadir al carrusel'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={images.map(img => img.id)}
-                  strategy={verticalListSortingStrategy}
+              {/* Image Management */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-secondary-700">
+                    Imágenes ({images.length})
+                  </h4>
+                  {images.length > 1 && (
+                    <p className="text-xs text-secondary-500">
+                      Arrastra para reordenar - el orden se respetará en la generación con IA
+                    </p>
+                  )}
+                </div>
+
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
                 >
-                  <div className="space-y-2">
-                    {images.map(image => (
-                      <SortableImageItem
-                        key={image.id}
-                        image={image}
-                        onRemove={removeImage}
-                        onRename={renameImage}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+                  <SortableContext
+                    items={images.map(img => img.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2">
+                      {images.map((image, index) => (
+                        <div key={image.id} className="flex items-center space-x-3">
+                          <div className="flex items-center justify-center w-6 h-6 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+                            {index + 1}
+                          </div>
+                          <SortableImageItem
+                            image={image}
+                            onRemove={removeImage}
+                            onRename={renameImage}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-end space-x-3 pt-6 border-t border-secondary-200">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleClose}
-            disabled={uploading}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            loading={uploading}
-            disabled={images.length === 0}
-          >
-            Crear Template
-          </Button>
-        </div>
-      </form>
+          {/* Actions */}
+          <div className="flex justify-end space-x-4 pt-8 mt-8 border-t border-secondary-200">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleClose}
+              disabled={uploading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              loading={uploading}
+              disabled={images.length === 0}
+            >
+              Crear Template
+            </Button>
+          </div>
+        </form>
+      </div>
     </Modal>
   )
 }

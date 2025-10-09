@@ -99,7 +99,7 @@ export function useTemplates(workspaceId: string) {
     name: string
     type: 'single' | 'carousel'
     socialNetworks: SocialNetwork[]
-    images: { name: string; file: File }[]
+    images: { name: string; file: File; dataUrl?: string }[]
   }) => {
     return await createTemplate({
       workspaceId,

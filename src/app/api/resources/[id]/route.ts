@@ -59,6 +59,9 @@ export async function PATCH(
     const body = await req.json()
     const { name } = body
 
+    console.log('PATCH resource - identifier:', identifier)
+    console.log('PATCH resource - new name:', name)
+
     if (!name) {
       return NextResponse.json(
         {
@@ -69,13 +72,21 @@ export async function PATCH(
       )
     }
 
+    // Debug: List all available resources
+    const allResources = ResourceStorage.getAll()
+    console.log('All available resources:', allResources.map(r => ({ id: r.id, name: r.name })))
+
     // Try to find by ID first, then by filename
     let resource = ResourceStorage.getById(identifier)
+    console.log('Found by ID:', resource ? 'YES' : 'NO')
+    
     if (!resource) {
       resource = ResourceStorage.getByFilename(identifier)
+      console.log('Found by filename:', resource ? 'YES' : 'NO')
     }
 
     if (!resource) {
+      console.log('Resource not found with identifier:', identifier)
       return NextResponse.json(
         {
           success: false,
@@ -85,7 +96,9 @@ export async function PATCH(
       )
     }
 
+    console.log('Updating resource:', resource.id, 'with name:', name)
     const updatedResource = ResourceStorage.update(resource.id, { name })
+    console.log('Update result:', updatedResource)
 
     return NextResponse.json({
       success: true,

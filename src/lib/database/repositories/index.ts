@@ -8,6 +8,8 @@ export { TemplateRepository } from './TemplateRepository'
 export { CampaignRepository } from './CampaignRepository'
 export { PublicationRepository } from './PublicationRepository'
 export { SocialAccountRepository } from './SocialAccountRepository'
+export { ContentDescriptionRepository } from './ContentDescriptionRepository'
+export { BrandManualRepository } from './BrandManualRepository'
 
 // Repository instances for easy access
 export const repositories = {
@@ -19,6 +21,8 @@ export const repositories = {
   campaign: new CampaignRepository(),
   publication: new PublicationRepository(),
   socialAccount: new SocialAccountRepository(),
+  contentDescription: new ContentDescriptionRepository(),
+  brandManual: new BrandManualRepository(),
 } as const
 
 // Type for repository collection

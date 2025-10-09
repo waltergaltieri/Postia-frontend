@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3'
-import { getDatabase } from '../connection'
+import { getDatabase, initializeDatabase } from '../connection'
 import { QueryOptions } from '../types'
 
 /**
@@ -11,7 +11,12 @@ export abstract class BaseRepository<T, CreateData, UpdateData, Filters = {}> {
   private static statementCache = new Map<string, Database.Statement>()
 
   constructor(tableName: string) {
-    this.db = getDatabase()
+    try {
+      this.db = getDatabase()
+    } catch (error) {
+      // If database is not initialized, initialize it
+      this.db = initializeDatabase()
+    }
     this.tableName = tableName
   }
 

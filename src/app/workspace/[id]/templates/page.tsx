@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { WorkspaceLayout } from '@/layouts'
 import { TemplateGallery } from '@/components/templates/TemplateGallery'
 import { TemplateUploadModal } from '@/components/templates/TemplateUploadModal'
+import { TemplateEditModal } from '@/components/templates/TemplateEditModal'
 import { useTemplates } from '@/hooks/useTemplates'
 import { SocialNetwork } from '@/types'
 import toast from 'react-hot-toast'
@@ -14,6 +15,8 @@ export default function TemplatesPage() {
   const workspaceId = params.id as string
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [templateToEdit, setTemplateToEdit] = useState<any>(null)
 
   const {
     templates,
@@ -31,9 +34,13 @@ export default function TemplatesPage() {
   } = useTemplates(workspaceId)
 
   const handleTemplateEdit = async (id: string) => {
-    console.log('Edit template:', id)
-    // TODO: Implement template editing modal
-    toast('Función de edición próximamente', { icon: 'ℹ️' })
+    const template = templates.find(t => t.id === id)
+    if (template) {
+      setTemplateToEdit(template)
+      setIsEditModalOpen(true)
+    } else {
+      toast.error('Template no encontrado')
+    }
   }
 
   const handleTemplateDeleteConfirm = async (id: string) => {
@@ -62,6 +69,20 @@ export default function TemplatesPage() {
     } catch (error) {
       console.error('Error creating template:', error)
       throw error // Re-throw to let the modal handle the error display
+    }
+  }
+
+  const handleTemplateUpdate = async (templateId: string, data: {
+    name: string
+    socialNetworks: SocialNetwork[]
+  }) => {
+    try {
+      await handleUpdateTemplate(templateId, data)
+      setIsEditModalOpen(false)
+      setTemplateToEdit(null)
+    } catch (error) {
+      console.error('Error updating template:', error)
+      throw error
     }
   }
 
@@ -99,8 +120,7 @@ export default function TemplatesPage() {
           filterType={filterType}
           onSearchChange={handleSearchChange}
           onFilterChange={handleFilterChange}
-          selectedTemplates={selectedTemplates}
-          onTemplateSelect={handleTemplateSelect}
+          selectable={false}
         />
 
         <TemplateUploadModal
@@ -108,6 +128,16 @@ export default function TemplatesPage() {
           onClose={() => setIsUploadModalOpen(false)}
           onUpload={handleTemplateUpload}
           workspaceId={workspaceId}
+        />
+
+        <TemplateEditModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false)
+            setTemplateToEdit(null)
+          }}
+          onUpdate={handleTemplateUpdate}
+          template={templateToEdit}
         />
       </div>
     </WorkspaceLayout>

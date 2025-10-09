@@ -93,9 +93,13 @@ export async function DELETE(
 ) {
   try {
     const templateId = params.id
+    console.log('Attempting to delete template:', templateId)
+    
     const deleted = TemplateStorage.delete(templateId)
+    console.log('Delete result:', deleted)
 
     if (!deleted) {
+      console.log('Template not found for deletion:', templateId)
       return NextResponse.json(
         {
           success: false,
@@ -105,6 +109,7 @@ export async function DELETE(
       )
     }
 
+    console.log('Template deleted successfully:', templateId)
     return NextResponse.json({
       success: true,
       message: 'Plantilla eliminada exitosamente',

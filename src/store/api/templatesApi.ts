@@ -12,7 +12,7 @@ export interface CreateTemplateRequest {
   name: string
   type: 'single' | 'carousel'
   socialNetworks: SocialNetwork[]
-  images: { name: string; file: File }[]
+  images: { name: string; file: File; dataUrl?: string }[]
 }
 
 export interface UpdateTemplateRequest {
@@ -92,7 +92,10 @@ export const templatesApi = createApi({
           name: params.name,
           type: params.type,
           socialNetworks: params.socialNetworks,
-          images: params.images.map(img => img.name), // For now, just send names
+          images: params.images.map(img => ({
+            name: img.name,
+            dataUrl: img.dataUrl
+          })),
         },
       }),
       invalidatesTags: [{ type: 'Template', id: 'LIST' }],

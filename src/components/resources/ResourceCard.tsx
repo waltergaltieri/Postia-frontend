@@ -31,6 +31,23 @@ export function ResourceCard({
 }: ResourceCardProps) {
   const [showContextMenu, setShowContextMenu] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const menuRef = React.useRef<HTMLDivElement>(null)
+
+  // Handle clicks outside menu
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowContextMenu(false)
+      }
+    }
+
+    if (showContextMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showContextMenu])
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -112,10 +129,14 @@ export function ResourceCard({
 
           {/* Context menu */}
           {showContextMenu && (
-            <div className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg border border-secondary-200 py-1 z-20">
+            <div 
+              ref={menuRef}
+              className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg border border-secondary-200 py-1 z-50"
+            >
               <button
                 type="button"
-                onClick={e => {
+                onMouseDown={e => {
+                  e.preventDefault()
                   e.stopPropagation()
                   handleEdit()
                 }}
@@ -126,7 +147,8 @@ export function ResourceCard({
               </button>
               <button
                 type="button"
-                onClick={e => {
+                onMouseDown={e => {
+                  e.preventDefault()
                   e.stopPropagation()
                   handleDelete()
                 }}
@@ -176,13 +198,7 @@ export function ResourceCard({
         </div>
       </div>
 
-      {/* Click outside handler for context menu */}
-      {showContextMenu && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setShowContextMenu(false)}
-        />
-      )}
+
     </div>
   )
 }

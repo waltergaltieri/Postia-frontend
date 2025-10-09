@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { headers } from 'next/headers'
 import { AuthService } from '@/lib/database/services'
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -20,8 +19,7 @@ export async function withAuth(
 ) {
   return async (req: NextRequest) => {
     try {
-      const headersList = headers()
-      const authorization = headersList.get('authorization')
+      const authorization = req.headers.get('authorization')
 
       if (!authorization || !authorization.startsWith('Bearer ')) {
         return NextResponse.json(

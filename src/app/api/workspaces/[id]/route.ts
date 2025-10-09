@@ -27,7 +27,9 @@ export const GET = withAuth(
         throw new Error('Usuario no autenticado')
       }
 
-      const workspace = await WorkspaceService.getWorkspaceById(id)
+      const workspaceService = new WorkspaceService()
+      const workspaceDetails = workspaceService.getWorkspaceDetails(id, user.agencyId)
+      const workspace = workspaceDetails.workspace
 
       if (!workspace) {
         throw new Error('Espacio de trabajo no encontrado')
@@ -55,40 +57,46 @@ export const GET = withAuth(
 export const PATCH = withAuth(
   async (req: AuthenticatedRequest, { params }: RouteParams) => {
     try {
+      console.log('PATCH /api/workspaces/[id] - Starting request')
       const { user } = req
       const { id } = params
+
+      console.log('User:', user?.id, 'AgencyId:', user?.agencyId, 'WorkspaceId:', id)
 
       if (!user) {
         throw new Error('Usuario no autenticado')
       }
 
-      // Check if workspace exists and user has access
-      const existingWorkspace = await WorkspaceService.getWorkspaceById(id)
-      if (!existingWorkspace) {
-        throw new Error('Espacio de trabajo no encontrado')
-      }
-
-      if (!withWorkspaceAuth(existingWorkspace.id, user.agencyId)) {
-        throw new Error('No autorizado para modificar este espacio de trabajo')
-      }
-
+      console.log('Creating WorkspaceService instance...')
+      const workspaceService = new WorkspaceService()
+      console.log('WorkspaceService created successfully')
+      
+      console.log('Parsing request body...')
       const body = await req.json()
+      console.log('Request body:', JSON.stringify(body, null, 2))
 
       const updateData: UpdateWorkspaceData = {
         name: body.name,
         branding: body.branding,
       }
 
-      const updatedWorkspace = await WorkspaceService.updateWorkspace(
+      console.log('Update data:', JSON.stringify(updateData, null, 2))
+      console.log('Calling updateWorkspace...')
+      
+      const updatedWorkspace = workspaceService.updateWorkspace(
         id,
-        updateData
+        updateData,
+        user.agencyId
       )
+
+      console.log('Workspace updated successfully:', updatedWorkspace?.id)
 
       return successResponse(
         updatedWorkspace,
         'Espacio de trabajo actualizado exitosamente'
       )
     } catch (error) {
+      console.error('PATCH /api/workspaces/[id] - Error:', error)
       return handleApiError(error)
     }
   }
@@ -108,17 +116,9 @@ export const DELETE = withAuth(
         throw new Error('Usuario no autenticado')
       }
 
-      // Check if workspace exists and user has access
-      const existingWorkspace = await WorkspaceService.getWorkspaceById(id)
-      if (!existingWorkspace) {
-        throw new Error('Espacio de trabajo no encontrado')
-      }
-
-      if (!withWorkspaceAuth(existingWorkspace.id, user.agencyId)) {
-        throw new Error('No autorizado para eliminar este espacio de trabajo')
-      }
-
-      await WorkspaceService.deleteWorkspace(id)
+      const workspaceService = new WorkspaceService()
+      
+      workspaceService.deleteWorkspace(id, user.agencyId)
 
       return successResponse(null, 'Espacio de trabajo eliminado exitosamente')
     } catch (error) {

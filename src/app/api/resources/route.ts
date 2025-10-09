@@ -74,10 +74,20 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Get custom names from form data
+    const customNames: string[] = []
+    let nameIndex = 0
+    while (formData.has(`names[${nameIndex}]`)) {
+      customNames.push(formData.get(`names[${nameIndex}]`) as string)
+      nameIndex++
+    }
+
     // Process each file and create resources
     const uploadedResources = []
     
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      
       // Validate file type
       const isImage = file.type.startsWith('image/')
       const isVideo = file.type.startsWith('video/')
@@ -87,15 +97,19 @@ export async function POST(req: NextRequest) {
       }
 
       // Create resource data
-      const resourceId = `resource-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const resourceId = `resource-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
       
       // Save file to disk
       const filePath = await ResourceStorage.saveFile(file, resourceId)
       
+      // Use custom name if provided, otherwise use filename without extension
+      const customName = customNames[i]
+      const resourceName = customName || file.name.replace(/\.[^/.]+$/, '')
+      
       const resource = {
         id: resourceId,
         workspaceId: workspaceId,
-        name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+        name: resourceName,
         originalName: file.name,
         filePath: filePath,
         url: filePath, // Direct path to file in public folder

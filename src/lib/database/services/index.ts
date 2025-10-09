@@ -18,6 +18,8 @@ export {
   MonitorPerformance,
   performanceMonitor,
 } from './PerformanceMonitor'
+export { ContentDescriptionService, getContentDescriptionService } from './ContentDescriptionService'
+export { BrandManualService, getBrandManualService } from './BrandManualService'
 
 // Re-export types for convenience
 export type {
@@ -31,6 +33,8 @@ export type {
   SocialAccount,
   SocialNetwork,
   OptimizationSettings,
+  ContentDescription,
+  BrandManual,
   CreateAgencyData,
   UpdateAgencyData,
   CreateUserData,
@@ -47,4 +51,8 @@ export type {
   UpdateTemplateData,
   CreateSocialAccountData,
   UpdateSocialAccountData,
+  CreateContentDescriptionData,
+  UpdateContentDescriptionData,
+  CreateBrandManualData,
+  UpdateBrandManualData,
 } from '../types'

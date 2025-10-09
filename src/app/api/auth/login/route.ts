@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { AuthService } from '@/lib/database/services'
+import { handleApiError, successResponse } from '../middleware'
 
 /**
  * POST /api/auth/login
@@ -11,52 +13,37 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Email y contraseña son requeridos',
-        },
+        { error: 'Email y contraseña son requeridos', success: false },
         { status: 400 }
       )
     }
 
-    // For now, just check if it's the expected credentials
-    if (email === 'admin@agency.com' && password === 'password123') {
-      const mockUser = {
-        id: 'user-admin-001',
-        email: 'admin@agency.com',
-        agencyId: 'agency-demo-001',
-        role: 'admin',
-        createdAt: new Date(),
-      }
+    // Authenticate user
+    const user = await AuthService.authenticate(email, password)
 
-      const token = `mock_jwt_token_${mockUser.id}_${Date.now()}`
-
-      return NextResponse.json({
-        success: true,
-        message: 'Autenticación exitosa',
-        data: {
-          user: mockUser,
-          token,
-        },
-      })
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Credenciales inválidas', success: false },
+        { status: 401 }
+      )
     }
 
-    return NextResponse.json(
+    // Generate mock JWT token (in production, use proper JWT)
+    const token = `mock_jwt_token_${user.id}`
+
+    return successResponse(
       {
-        success: false,
-        message: 'Credenciales inválidas',
+        user: {
+          id: user.id,
+          email: user.email,
+          agencyId: user.agencyId,
+          role: user.role,
+        },
+        token,
       },
-      { status: 401 }
+      'Inicio de sesión exitoso'
     )
   } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Error interno del servidor',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

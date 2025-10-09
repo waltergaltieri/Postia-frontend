@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
     console.log('Create template API called')
     
     const body = await req.json()
+    console.log('Template creation body:', JSON.stringify(body, null, 2))
     
     if (!body.workspaceId || !body.name) {
       return NextResponse.json(
@@ -73,18 +74,20 @@ export async function POST(req: NextRequest) {
     
     // Create new template
     const newTemplate = {
-      id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `template-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       workspaceId: body.workspaceId,
       name: body.name,
       type: body.type || 'single',
-      images: body.images || [],
+      images: body.images ? body.images.map((img: any) => img.dataUrl || img.name) : [],
       socialNetworks: body.socialNetworks || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
 
     // Store the template
+    console.log('Storing template:', newTemplate)
     TemplateStorage.add(newTemplate)
+    console.log('Template stored successfully')
 
     return NextResponse.json({
       success: true,

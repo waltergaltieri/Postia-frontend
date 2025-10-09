@@ -32,6 +32,23 @@ export function TemplateCard({
 }: TemplateCardProps) {
   const [showContextMenu, setShowContextMenu] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const menuRef = React.useRef<HTMLDivElement>(null)
+
+  // Handle clicks outside menu
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowContextMenu(false)
+      }
+    }
+
+    if (showContextMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showContextMenu])
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -109,7 +126,7 @@ export function TemplateCard({
     >
       {/* Selection indicator */}
       {selectable && (
-        <div className="absolute top-2 left-2 z-10">
+        <div className="absolute top-2 left-2 z-20">
           <div
             className={cn(
               'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
@@ -124,12 +141,14 @@ export function TemplateCard({
       )}
 
       {/* Template type indicator */}
-      <div className="absolute top-2 left-2 z-10">
-        <div className="flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-medium text-secondary-700">
-          {getTypeIcon()}
-          <span>{getTypeLabel()}</span>
+      {!selectable && (
+        <div className="absolute top-2 left-2 z-10">
+          <div className="flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-medium text-secondary-700">
+            {getTypeIcon()}
+            <span>{getTypeLabel()}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Context menu button */}
       {!selectable && (
@@ -148,10 +167,14 @@ export function TemplateCard({
 
           {/* Context menu */}
           {showContextMenu && (
-            <div className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg border border-secondary-200 py-1 z-20">
+            <div 
+              ref={menuRef}
+              className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg border border-secondary-200 py-1 z-50"
+            >
               <button
                 type="button"
-                onClick={e => {
+                onMouseDown={e => {
+                  e.preventDefault()
                   e.stopPropagation()
                   handleEdit()
                 }}
@@ -162,7 +185,8 @@ export function TemplateCard({
               </button>
               <button
                 type="button"
-                onClick={e => {
+                onMouseDown={e => {
+                  e.preventDefault()
                   e.stopPropagation()
                   handleDelete()
                 }}
@@ -250,13 +274,7 @@ export function TemplateCard({
         </div>
       </div>
 
-      {/* Click outside handler for context menu */}
-      {showContextMenu && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setShowContextMenu(false)}
-        />
-      )}
+
     </div>
   )
 }
