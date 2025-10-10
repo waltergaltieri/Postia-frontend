@@ -3,8 +3,28 @@ import { GeminiService } from './GeminiService'
 import { NanoBananaService } from './NanoBananaService'
 import { ContentGenerationService } from './ContentGenerationService'
 
+// Import AI Agents
+import { 
+  AIAgentService, 
+  getAIAgentService, 
+  createAIAgentService,
+  AgentManager,
+  ContentCreatorAgent,
+  BrandStrategistAgent
+} from './agents'
+
 // Re-export services
-export { GeminiService, NanoBananaService, ContentGenerationService }
+export { 
+  GeminiService, 
+  NanoBananaService, 
+  ContentGenerationService,
+  AIAgentService,
+  getAIAgentService,
+  createAIAgentService,
+  AgentManager,
+  ContentCreatorAgent,
+  BrandStrategistAgent
+}
 
 // Types exports
 export type {
@@ -74,7 +94,8 @@ export function createAIServices() {
     return {
       gemini: createGeminiService(),
       nanoBanana: createNanoBananaService(),
-      contentGeneration: createContentGenerationService()
+      contentGeneration: createContentGenerationService(),
+      agents: getAIAgentService()
     }
   } catch (error) {
     console.error('Failed to create AI services:', error)

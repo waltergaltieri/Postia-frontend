@@ -25,7 +25,9 @@
     "db:monitor": "tsx src/lib/database/cli/monitoring.ts",
     "db:health": "tsx src/lib/database/cli/monitoring.ts health",
     "db:watch": "tsx src/lib/database/cli/monitoring.ts watch",
-    "db:dashboard": "tsx src/lib/database/cli/dashboard.ts"
+    "db:dashboard": "tsx src/lib/database/cli/dashboard.ts",
+    "ai:test": "tsx src/lib/ai/test-agents.ts",
+    "ai:health": "tsx -e \"import { getAIAgentService } from './src/lib/ai/agents'; getAIAgentService().healthCheck().then(console.log)\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
