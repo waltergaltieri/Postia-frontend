@@ -78,25 +78,36 @@ export function PublicationDetailModal({
   const statusInfo = getStatusInfo(status)
 
   const handlePublishNow = async () => {
+    if (!event.id) return
+
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      toast.success('¡Publicación enviada exitosamente!')
-
-      // Update event status
-      if (onEventUpdate && event.id) {
-        onEventUpdate(event.id, {
-          ...event,
-          extendedProps: {
-            ...extendedProps,
-            status: 'published',
-          },
-        })
+      const response = await fetch(`/api/calendar/${event.id}/publish`, {
+        method: 'POST',
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        toast.success('¡Publicación enviada exitosamente!')
+        
+        // Update event status
+        if (onEventUpdate && event.id) {
+          onEventUpdate(event.id, {
+            ...event,
+            extendedProps: {
+              ...extendedProps,
+              status: 'published',
+            },
+          })
+        }
+        
+        onClose()
+      } else {
+        toast.error(data.message || 'Error al publicar')
       }
-
-      onClose()
     } catch (error) {
+      console.error('Error publishing:', error)
       toast.error('Error al publicar. Inténtalo de nuevo.')
     } finally {
       setIsLoading(false)
@@ -104,26 +115,33 @@ export function PublicationDetailModal({
   }
 
   const handleRegenerate = async () => {
+    if (!event.id) return
+
     setIsLoading(true)
     try {
-      // Simulate AI regeneration
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      toast.success('Contenido regenerado con IA')
-
-      // In a real app, this would update the content
-      const newContent =
-        'Nuevo contenido generado por IA con base en el prompt original. ¡Descubre las últimas tendencias! ✨'
-
-      if (onEventUpdate && event.id) {
-        onEventUpdate(event.id, {
-          ...event,
-          extendedProps: {
-            ...extendedProps,
-            content: newContent,
-          },
-        })
+      const response = await fetch(`/api/calendar/${event.id}/regenerate`, {
+        method: 'POST',
+      })
+      
+      const data = await response.json()
+      
+      if (data.success && data.data) {
+        toast.success('Contenido regenerado con IA')
+        
+        if (onEventUpdate && event.id) {
+          onEventUpdate(event.id, {
+            ...event,
+            extendedProps: {
+              ...extendedProps,
+              content: data.data.content,
+            },
+          })
+        }
+      } else {
+        toast.error(data.message || 'Error al regenerar contenido')
       }
     } catch (error) {
+      console.error('Error regenerating:', error)
       toast.error('Error al regenerar contenido')
     } finally {
       setIsLoading(false)
@@ -131,29 +149,43 @@ export function PublicationDetailModal({
   }
 
   const handleReschedule = async () => {
-    if (!newDate) {
+    if (!newDate || !event.id) {
       toast.error('Selecciona una nueva fecha')
       return
     }
 
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch(`/api/calendar/${event.id}/reschedule`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scheduledDate: newDate.toISOString(),
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        if (onEventUpdate && event.id && newDate) {
+          onEventUpdate(event.id, {
+            ...event,
+            start: newDate.toISOString(),
+            end: new Date(newDate.getTime() + 30 * 60000).toISOString(),
+          })
+        }
 
-      if (onEventUpdate && event.id && newDate) {
-        onEventUpdate(event.id, {
-          ...event,
-          start: newDate.toISOString(),
-          end: new Date(newDate.getTime() + 30 * 60000).toISOString(), // Add 30 minutes
-        })
+        toast.success('Publicación reprogramada exitosamente')
+        setIsRescheduling(false)
+        setNewDate(null)
+        onClose()
+      } else {
+        toast.error(data.message || 'Error al reprogramar')
       }
-
-      toast.success('Publicación reprogramada exitosamente')
-      setIsRescheduling(false)
-      setNewDate(null)
-      onClose()
     } catch (error) {
+      console.error('Error rescheduling:', error)
       toast.error('Error al reprogramar')
     } finally {
       setIsLoading(false)
@@ -161,24 +193,34 @@ export function PublicationDetailModal({
   }
 
   const handleCancel = async () => {
+    if (!event.id) return
+
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800))
+      const response = await fetch(`/api/calendar/${event.id}/cancel`, {
+        method: 'POST',
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        if (onEventUpdate && event.id) {
+          onEventUpdate(event.id, {
+            ...event,
+            extendedProps: {
+              ...extendedProps,
+              status: 'cancelled',
+            },
+          })
+        }
 
-      if (onEventUpdate && event.id) {
-        onEventUpdate(event.id, {
-          ...event,
-          extendedProps: {
-            ...extendedProps,
-            status: 'cancelled',
-          },
-        })
+        toast.success('Publicación cancelada')
+        onClose()
+      } else {
+        toast.error(data.message || 'Error al cancelar publicación')
       }
-
-      toast.success('Publicación cancelada')
-      onClose()
     } catch (error) {
+      console.error('Error cancelling:', error)
       toast.error('Error al cancelar publicación')
     } finally {
       setIsLoading(false)

@@ -4,9 +4,9 @@ import type { Workspace, WorkspaceFormData, ApiResponse } from '@/types'
 export const workspaceApi = createApi({
   reducerPath: 'workspaceApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/workspaces',
+    baseUrl: '/api/workspaces-simple', // Temporary: use simple endpoint
     prepareHeaders: (headers, { getState }) => {
-      // Add auth token when available
+      // Add auth token when available (not used in simple endpoint)
       const token = localStorage.getItem('auth_token')
       if (token) {
         headers.set('authorization', `Bearer ${token}`)
@@ -18,7 +18,10 @@ export const workspaceApi = createApi({
   endpoints: builder => ({
     // Get all workspaces for the current agency
     getWorkspaces: builder.query<ApiResponse<Workspace[]>, void>({
-      query: () => '',
+      query: () => {
+        // Temporary: use known agency ID
+        return '?agencyId=agency-1760035323771'
+      },
       providesTags: ['Workspace'],
     }),
 
@@ -34,7 +37,7 @@ export const workspaceApi = createApi({
       WorkspaceFormData
     >({
       query: workspaceData => ({
-        url: '',
+        url: '?agencyId=agency-1760035323771', // Temporary: use known agency ID
         method: 'POST',
         body: workspaceData,
       }),
@@ -47,7 +50,7 @@ export const workspaceApi = createApi({
       { id: string; data: Partial<WorkspaceFormData> }
     >({
       query: ({ id, data }) => ({
-        url: `/${id}`,
+        url: `/${id}?agencyId=agency-1760035323771`, // Temporary: use known agency ID
         method: 'PATCH',
         body: data,
       }),

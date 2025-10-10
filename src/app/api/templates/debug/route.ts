@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { TemplateStorage } from '../storage'
+import { TemplateRepository } from '@/lib/database/repositories/TemplateRepository'
 
 /**
  * GET /api/templates/debug
@@ -7,7 +7,8 @@ import { TemplateStorage } from '../storage'
  */
 export async function GET(req: NextRequest) {
   try {
-    const allTemplates = TemplateStorage.getAll()
+    const templateRepo = new TemplateRepository()
+    const allTemplates = templateRepo.findAll()
     
     return NextResponse.json({
       success: true,
@@ -36,11 +37,24 @@ export async function GET(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    TemplateStorage.clear()
+    const templateRepo = new TemplateRepository()
+    
+    // Get all templates and delete them
+    const allTemplates = templateRepo.findAll()
+    let deletedCount = 0
+    
+    for (const template of allTemplates) {
+      try {
+        templateRepo.delete(template.id)
+        deletedCount++
+      } catch (error) {
+        console.error(`Failed to delete template ${template.id}:`, error)
+      }
+    }
     
     return NextResponse.json({
       success: true,
-      message: 'All templates cleared',
+      message: `${deletedCount} templates cleared`,
     })
   } catch (error) {
     console.error('Debug clear API error:', error)

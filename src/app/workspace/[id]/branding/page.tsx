@@ -7,18 +7,16 @@ import { z } from 'zod'
 import { useParams } from 'next/navigation'
 import { WorkspaceLayout } from '@/layouts'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
-import { Button, Input } from '@/components/common'
+import { Button, Input, ColorPicker } from '@/components/common'
 import { useDropzone } from 'react-dropzone'
 import { toast } from 'react-hot-toast'
 import { HiPhotograph, HiColorSwatch, HiSave, HiRefresh } from 'react-icons/hi'
-import type { WorkspaceBranding } from '@/types'
+
 import '@/styles/branding.css'
 
 const brandingSchema = z.object({
-  colors: z.object({
-    primary: z.string().regex(/^#[0-9A-F]{6}$/i, 'Color primario inválido'),
-    secondary: z.string().regex(/^#[0-9A-F]{6}$/i, 'Color secundario inválido'),
-  }),
+  primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Color primario inválido'),
+  secondaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Color secundario inválido'),
   logo: z.string().optional(),
   slogan: z.string().max(100, 'El eslogan no puede exceder 100 caracteres'),
   description: z
@@ -70,10 +68,8 @@ export default function WorkspaceBrandingPage() {
     if (currentWorkspace) {
       const branding = currentWorkspace.branding
       reset({
-        colors: {
-          primary: branding.colors.primary,
-          secondary: branding.colors.secondary,
-        },
+        primaryColor: branding.primaryColor,
+        secondaryColor: branding.secondaryColor,
         logo: branding.logo || '',
         slogan: branding.slogan,
         description: branding.description,
@@ -116,11 +112,9 @@ export default function WorkspaceBrandingPage() {
 
     setIsLoading(true)
     try {
-      const updatedBranding: WorkspaceBranding = {
-        colors: {
-          primary: data.colors.primary,
-          secondary: data.colors.secondary,
-        },
+      const updatedBranding = {
+        primaryColor: data.primaryColor,
+        secondaryColor: data.secondaryColor,
         logo: data.logo,
         slogan: data.slogan,
         description: data.description,
@@ -141,10 +135,8 @@ export default function WorkspaceBrandingPage() {
     if (currentWorkspace) {
       const branding = currentWorkspace.branding
       reset({
-        colors: {
-          primary: branding.colors.primary,
-          secondary: branding.colors.secondary,
-        },
+        primaryColor: branding.primaryColor,
+        secondaryColor: branding.secondaryColor,
         logo: branding.logo || '',
         slogan: branding.slogan,
         description: branding.description,
@@ -245,43 +237,21 @@ export default function WorkspaceBrandingPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-700 mb-2">
-                        Color Primario
-                      </label>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="color"
-                          className="h-11 w-16 rounded-lg border border-secondary-300 cursor-pointer bg-white"
-                          {...register('colors.primary')}
-                        />
-                        <Input
-                          placeholder="#9333ea"
-                          error={errors.colors?.primary?.message}
-                          {...register('colors.primary')}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
+                    <ColorPicker
+                      label="Color Primario"
+                      placeholder="#9333ea"
+                      error={errors.primaryColor?.message}
+                      value={watchedValues?.primaryColor || currentWorkspace.branding.primaryColor}
+                      onChange={(value) => setValue('primaryColor', value, { shouldDirty: true })}
+                    />
 
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-700 mb-2">
-                        Color Secundario
-                      </label>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="color"
-                          className="h-11 w-16 rounded-lg border border-secondary-300 cursor-pointer bg-white"
-                          {...register('colors.secondary')}
-                        />
-                        <Input
-                          placeholder="#737373"
-                          error={errors.colors?.secondary?.message}
-                          {...register('colors.secondary')}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
+                    <ColorPicker
+                      label="Color Secundario"
+                      placeholder="#737373"
+                      error={errors.secondaryColor?.message}
+                      value={watchedValues?.secondaryColor || currentWorkspace.branding.secondaryColor}
+                      onChange={(value) => setValue('secondaryColor', value, { shouldDirty: true })}
+                    />
                   </div>
                 </div>
 
@@ -340,9 +310,9 @@ export default function WorkspaceBrandingPage() {
                     style={
                       {
                         '--preview-primary-color':
-                          watchedValues?.colors?.primary ||
-                          currentWorkspace.branding.colors.primary,
-                        '--preview-primary-bg': `${watchedValues?.colors?.primary || currentWorkspace.branding.colors.primary}08`,
+                          watchedValues?.primaryColor ||
+                          currentWorkspace.branding.primaryColor,
+                        '--preview-primary-bg': `${watchedValues?.primaryColor || currentWorkspace.branding.primaryColor}08`,
                       } as React.CSSProperties
                     }
                   >
@@ -353,8 +323,8 @@ export default function WorkspaceBrandingPage() {
                         style={
                           {
                             '--preview-primary-color':
-                              watchedValues?.colors?.primary ||
-                              currentWorkspace.branding.colors.primary,
+                              watchedValues?.primaryColor ||
+                              currentWorkspace.branding.primaryColor,
                           } as React.CSSProperties
                         }
                       >
@@ -370,8 +340,8 @@ export default function WorkspaceBrandingPage() {
                             style={
                               {
                                 '--preview-primary-color':
-                                  watchedValues?.colors?.primary ||
-                                  currentWorkspace.branding.colors.primary,
+                                  watchedValues?.primaryColor ||
+                                  currentWorkspace.branding.primaryColor,
                               } as React.CSSProperties
                             }
                           >
@@ -388,8 +358,8 @@ export default function WorkspaceBrandingPage() {
                           style={
                             {
                               '--preview-secondary-color':
-                                watchedValues?.colors?.secondary ||
-                                currentWorkspace.branding.colors.secondary,
+                                watchedValues?.secondaryColor ||
+                                currentWorkspace.branding.secondaryColor,
                             } as React.CSSProperties
                           }
                         >
@@ -431,8 +401,8 @@ export default function WorkspaceBrandingPage() {
                             style={
                               {
                                 '--preview-color':
-                                  watchedValues?.colors?.primary ||
-                                  currentWorkspace.branding.colors.primary,
+                                  watchedValues?.primaryColor ||
+                                  currentWorkspace.branding.primaryColor,
                               } as React.CSSProperties
                             }
                           ></div>
@@ -447,8 +417,8 @@ export default function WorkspaceBrandingPage() {
                             style={
                               {
                                 '--preview-color':
-                                  watchedValues?.colors?.secondary ||
-                                  currentWorkspace.branding.colors.secondary,
+                                  watchedValues?.secondaryColor ||
+                                  currentWorkspace.branding.secondaryColor,
                               } as React.CSSProperties
                             }
                           ></div>

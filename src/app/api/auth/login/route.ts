@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Authenticate user
-    const user = await AuthService.authenticate(email, password)
+    const user = AuthService.authenticate(email, password)
 
     if (!user) {
       return NextResponse.json(

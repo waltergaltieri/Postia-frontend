@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ResourceStorage } from '../storage'
+import { ResourceRepository } from '@/lib/database/repositories/ResourceRepository'
 
 /**
  * GET /api/resources/debug
@@ -7,7 +7,8 @@ import { ResourceStorage } from '../storage'
  */
 export async function GET(req: NextRequest) {
   try {
-    const allResources = ResourceStorage.getAll()
+    const resourceRepo = new ResourceRepository()
+    const allResources = resourceRepo.findAll()
     
     return NextResponse.json({
       success: true,
@@ -36,11 +37,24 @@ export async function GET(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    ResourceStorage.clear()
+    const resourceRepo = new ResourceRepository()
+    
+    // Get all resources and delete them
+    const allResources = resourceRepo.findAll()
+    let deletedCount = 0
+    
+    for (const resource of allResources) {
+      try {
+        resourceRepo.delete(resource.id)
+        deletedCount++
+      } catch (error) {
+        console.error(`Failed to delete resource ${resource.id}:`, error)
+      }
+    }
     
     return NextResponse.json({
       success: true,
-      message: 'All resources cleared',
+      message: `${deletedCount} resources cleared`,
     })
   } catch (error) {
     console.error('Debug clear API error:', error)

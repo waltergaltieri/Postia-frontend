@@ -2,6 +2,7 @@
 export { Button, buttonVariants } from './Button'
 export { Input, inputVariants } from './Input'
 export { Modal } from './Modal'
+export { ColorPicker } from './ColorPicker'
 export { Dropdown } from './Dropdown'
 export { ToastProvider, showToast, useToast } from './Toast'
 export { MetricCard } from './MetricCard'

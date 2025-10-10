@@ -11,10 +11,10 @@ export class AuthService {
      * Authenticate user with email and password
      * Note: In production, passwords should be properly hashed with bcrypt
      */
-    public static async authenticate(
+    public static authenticate(
         email: string,
         password: string
-    ): Promise<User | null> {
+    ): User | null {
         try {
             const user = this.userRepository.findByEmail(email)
 

@@ -20,6 +20,7 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors },
     setError,
+    setValue,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
@@ -45,6 +46,17 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Quick access functions
+  const fillCredentials = (email: string, password: string) => {
+    setValue('email', email)
+    setValue('password', password)
+  }
+
+  const quickLogin = async (email: string, password: string) => {
+    fillCredentials(email, password)
+    await onSubmit({ email, password })
   }
 
   return (
@@ -112,6 +124,65 @@ export default function LoginPage() {
               Iniciar Sesión
             </Button>
           </form>
+
+          {/* Quick Access Buttons */}
+          <div className="mt-6 pt-6 border-t border-secondary-200">
+            <p className="text-sm font-semibold text-secondary-700 mb-3 text-center">
+              🚀 Acceso Rápido (Desarrollo)
+            </p>
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-left justify-start"
+                onClick={() => quickLogin('admin-cq2z7t@miagencia.com', 'password123')}
+                disabled={isLoading}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div>
+                    <div className="font-medium text-green-700">✨ Cuenta Limpia (Recomendada)</div>
+                    <div className="text-xs text-secondary-500">admin-cq2z7t@miagencia.com</div>
+                  </div>
+                  <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                    0 templates
+                  </div>
+                </div>
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-left justify-start"
+                onClick={() => quickLogin('admin-dcr96g@miagencia.com', 'password123')}
+                disabled={isLoading}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div>
+                    <div className="font-medium text-blue-700">📊 Cuenta Original</div>
+                    <div className="text-xs text-secondary-500">admin-dcr96g@miagencia.com</div>
+                  </div>
+                  <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                    Con datos
+                  </div>
+                </div>
+              </Button>
+            </div>
+            
+            <div className="mt-3 text-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => fillCredentials('admin-cq2z7t@miagencia.com', 'password123')}
+                disabled={isLoading}
+                className="text-xs"
+              >
+                Solo llenar campos (cuenta limpia)
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Register Link */}
@@ -127,15 +198,19 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Development helper */}
-        <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-200">
-          <p className="text-xs text-primary-700 font-semibold mb-2">
-            Credenciales de prueba (Agencia Demo):
+        {/* Development Info */}
+        <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
+          <p className="text-xs text-amber-700 font-semibold mb-2">
+            💡 Información de Desarrollo:
           </p>
-          <p className="text-xs text-primary-600">Email: admin@agency.com</p>
-          <p className="text-xs text-primary-600">Contraseña: password123</p>
-          <p className="text-xs text-primary-500 mt-1">
-            También disponibles: member@agency.com, designer@agency.com
+          <p className="text-xs text-amber-600">
+            • Cuenta limpia: Perfecta para pruebas desde cero
+          </p>
+          <p className="text-xs text-amber-600">
+            • Cuenta original: Con datos existentes para comparar
+          </p>
+          <p className="text-xs text-amber-500 mt-1">
+            Los botones de acceso rápido son temporales para desarrollo
           </p>
         </div>
       </div>

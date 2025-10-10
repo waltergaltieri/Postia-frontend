@@ -67,35 +67,14 @@ export default function DashboardPage() {
     router.push(`/workspace/${workspaceId}/dashboard`)
   }
 
-  // Mock data for charts
-  const monthlyData = [
-    { name: 'Ene', publicaciones: 45, campañas: 3 },
-    { name: 'Feb', publicaciones: 52, campañas: 4 },
-    { name: 'Mar', publicaciones: 38, campañas: 2 },
-    { name: 'Abr', publicaciones: 61, campañas: 5 },
-    { name: 'May', publicaciones: 55, campañas: 4 },
-    { name: 'Jun', publicaciones: 67, campañas: 6 },
-  ]
+  // Real data - no mock data
+  const monthlyData: any[] = []
+  const socialNetworkData: any[] = []
 
-  const socialNetworkData = [
-    { name: 'Instagram', value: 35, color: '#9333ea' },
-    { name: 'Facebook', value: 30, color: '#3b82f6' },
-    { name: 'LinkedIn', value: 20, color: '#10b981' },
-    { name: 'Twitter', value: 15, color: '#f59e0b' },
-  ]
-
-  // Calculate metrics
-  const totalCampaigns =
-    workspaces.reduce(
-      (acc, workspace) => acc + Math.floor(Math.random() * 3),
-      0
-    ) || 1
-  const totalPublications =
-    workspaces.reduce(
-      (acc, workspace) => acc + Math.floor(Math.random() * 20) + 5,
-      0
-    ) || 41
-  const totalCredits = 1250
+  // Calculate real metrics from database
+  const totalCampaigns = 0
+  const totalPublications = 0
+  const totalCredits = user?.agency?.credits || 0
 
   return (
     <AgencyLayout>
@@ -352,15 +331,11 @@ export default function DashboardPage() {
                         <div className="workspace-card-stats">
                           <div className="flex items-center">
                             <HiChartPie className="h-3 w-3 mr-1" />
-                            <span>
-                              {Math.floor(Math.random() * 5) + 1} campañas
-                            </span>
+                            <span>0 campañas</span>
                           </div>
                           <div className="flex items-center">
                             <HiCalendar className="h-3 w-3 mr-1" />
-                            <span>
-                              {Math.floor(Math.random() * 20) + 5} publicaciones
-                            </span>
+                            <span>0 publicaciones</span>
                           </div>
                           <div className="flex items-center">
                             <HiUsers className="h-3 w-3 mr-1" />

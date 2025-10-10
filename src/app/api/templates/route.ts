@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { TemplateStorage } from './storage'
+import { TemplateRepository } from '@/lib/database/repositories/TemplateRepository'
 
 /**
  * GET /api/templates
@@ -16,21 +16,26 @@ export async function GET(req: NextRequest) {
 
     console.log('Template filters:', { workspaceId, type, search })
 
-    // Get templates from storage
-    let filteredTemplates = workspaceId 
-      ? TemplateStorage.getByWorkspace(workspaceId)
-      : TemplateStorage.getAll()
-
-    // Filter by type if specified
-    if (type && type !== 'all') {
-      filteredTemplates = filteredTemplates.filter(t => t.type === type)
+    if (!workspaceId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'workspaceId es requerido',
+        },
+        { status: 400 }
+      )
     }
 
-    // Filter by search term if specified
+    const templateRepo = new TemplateRepository()
+    let filteredTemplates
+
+    // Get templates from database
     if (search) {
-      filteredTemplates = filteredTemplates.filter(t => 
-        t.name.toLowerCase().includes(search.toLowerCase())
-      )
+      filteredTemplates = templateRepo.searchByName(workspaceId, search)
+    } else if (type && type !== 'all') {
+      filteredTemplates = templateRepo.findByType(workspaceId, type as 'single' | 'carousel')
+    } else {
+      filteredTemplates = templateRepo.findByWorkspaceId(workspaceId)
     }
 
     return NextResponse.json({
@@ -72,21 +77,31 @@ export async function POST(req: NextRequest) {
       )
     }
     
-    // Create new template
-    const newTemplate = {
-      id: `template-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+    const templateRepo = new TemplateRepository()
+    
+    // Check if template name already exists in workspace
+    if (!templateRepo.isNameAvailable(body.workspaceId, body.name)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Ya existe una plantilla con ese nombre en este workspace',
+        },
+        { status: 400 }
+      )
+    }
+    
+    // Create template data
+    const templateData = {
       workspaceId: body.workspaceId,
       name: body.name,
       type: body.type || 'single',
       images: body.images ? body.images.map((img: any) => img.dataUrl || img.name) : [],
       socialNetworks: body.socialNetworks || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     }
 
-    // Store the template
-    console.log('Storing template:', newTemplate)
-    TemplateStorage.add(newTemplate)
+    // Store the template in database
+    console.log('Storing template in database:', templateData)
+    const newTemplate = templateRepo.create(templateData)
     console.log('Template stored successfully')
 
     return NextResponse.json({

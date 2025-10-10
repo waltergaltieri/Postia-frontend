@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, Input, Modal } from '@/components/common'
+import { Button, Input, Modal, ColorPicker } from '@/components/common'
 import { useDropzone } from 'react-dropzone'
 import { toast } from 'react-hot-toast'
 
@@ -237,40 +237,20 @@ export function WorkspaceCreationModal({
 
             {/* Color Picker */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-2">
-                  Color Primario
-                </label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="color"
-                    className="h-10 w-16 rounded border border-secondary-300 cursor-pointer"
-                    {...register('branding.colors.primary')}
-                  />
-                  <Input
-                    placeholder="#3B82F6"
-                    error={errors.branding?.colors?.primary?.message}
-                    {...register('branding.colors.primary')}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-2">
-                  Color Secundario
-                </label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="color"
-                    className="h-10 w-16 rounded border border-secondary-300 cursor-pointer"
-                    {...register('branding.colors.secondary')}
-                  />
-                  <Input
-                    placeholder="#6B7280"
-                    error={errors.branding?.colors?.secondary?.message}
-                    {...register('branding.colors.secondary')}
-                  />
-                </div>
-              </div>
+              <ColorPicker
+                label="Color Primario"
+                placeholder="#3B82F6"
+                error={errors.branding?.colors?.primary?.message}
+                value={watchedValues.branding?.colors?.primary || '#3B82F6'}
+                onChange={(value) => setValue('branding.colors.primary', value, { shouldDirty: true })}
+              />
+              <ColorPicker
+                label="Color Secundario"
+                placeholder="#6B7280"
+                error={errors.branding?.colors?.secondary?.message}
+                value={watchedValues.branding?.colors?.secondary || '#6B7280'}
+                onChange={(value) => setValue('branding.colors.secondary', value, { shouldDirty: true })}
+              />
             </div>
 
             {/* Slogan */}

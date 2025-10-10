@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { getDatabase, initializeDatabase } from '../connection'
 import { QueryOptions } from '../types'
+import { ensureDatabaseInitialized } from '../initializer'
 
 /**
  * Base repository class with common CRUD operations and prepared statements cache
@@ -17,6 +18,10 @@ export abstract class BaseRepository<T, CreateData, UpdateData, Filters = {}> {
       // If database is not initialized, initialize it
       this.db = initializeDatabase()
     }
+    
+    // Ensure database schema is initialized
+    ensureDatabaseInitialized()
+    
     this.tableName = tableName
   }
 

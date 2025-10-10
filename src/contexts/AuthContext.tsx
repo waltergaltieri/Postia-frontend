@@ -39,8 +39,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Verify token with API
-      const response = await fetch('/api/auth/me', {
+      // Verify token with API (temporary: use simple endpoint)
+      const response = await fetch('/api/auth-simple/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },

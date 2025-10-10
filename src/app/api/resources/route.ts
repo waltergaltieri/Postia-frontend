@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ResourceStorage } from './storage'
+import { ResourceRepository } from '@/lib/database/repositories/ResourceRepository'
 
 /**
  * GET /api/resources
@@ -16,14 +16,26 @@ export async function GET(req: NextRequest) {
 
     console.log('Resource filters:', { workspaceId, type, search })
 
-    // Get resources from storage
-    let filteredResources = workspaceId 
-      ? ResourceStorage.getByWorkspace(workspaceId)
-      : ResourceStorage.getAll()
+    if (!workspaceId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'workspaceId es requerido',
+        },
+        { status: 400 }
+      )
+    }
 
-    // Filter by type if specified
-    if (type && type !== 'all') {
-      filteredResources = filteredResources.filter(r => r.type === type)
+    const resourceRepo = new ResourceRepository()
+    let filteredResources
+
+    // Get resources from database
+    if (search) {
+      filteredResources = resourceRepo.searchByName(workspaceId, search)
+    } else if (type && type !== 'all') {
+      filteredResources = resourceRepo.findByType(workspaceId, type as 'image' | 'video')
+    } else {
+      filteredResources = resourceRepo.findByWorkspaceId(workspaceId)
     }
 
     return NextResponse.json({
@@ -82,7 +94,7 @@ export async function POST(req: NextRequest) {
       nameIndex++
     }
 
-    // Process each file and create resources
+    const resourceRepo = new ResourceRepository()
     const uploadedResources = []
     
     for (let i = 0; i < files.length; i++) {
@@ -96,18 +108,14 @@ export async function POST(req: NextRequest) {
         continue // Skip unsupported files
       }
 
-      // Create resource data
-      const resourceId = `resource-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
-      
-      // Save file to disk
-      const filePath = await ResourceStorage.saveFile(file, resourceId)
+      // Save file to disk (using existing storage utility)
+      const filePath = await saveFileToUploads(file)
       
       // Use custom name if provided, otherwise use filename without extension
       const customName = customNames[i]
       const resourceName = customName || file.name.replace(/\.[^/.]+$/, '')
       
-      const resource = {
-        id: resourceId,
+      const resourceData = {
         workspaceId: workspaceId,
         name: resourceName,
         originalName: file.name,
@@ -116,15 +124,13 @@ export async function POST(req: NextRequest) {
         type: isImage ? 'image' : 'video' as 'image' | 'video',
         mimeType: file.type,
         sizeBytes: file.size,
-        width: isImage ? 1080 : null,
-        height: isImage ? 1080 : null,
-        durationSeconds: isVideo ? 30 : null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        width: isImage ? 1080 : undefined,
+        height: isImage ? 1080 : undefined,
+        durationSeconds: isVideo ? 30 : undefined,
       }
 
-      // Store the resource metadata
-      ResourceStorage.add(resource)
+      // Store the resource in database
+      const resource = resourceRepo.create(resourceData)
       uploadedResources.push(resource)
     }
 
@@ -154,4 +160,29 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// Helper function to save file to uploads directory
+async function saveFileToUploads(file: File): Promise<string> {
+  const fs = require('fs')
+  const path = require('path')
+  
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+  
+  // Ensure uploads directory exists
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true })
+  }
+  
+  const fileExtension = file.name.split('.').pop()
+  const fileName = `resource-${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExtension}`
+  const filePath = `/uploads/${fileName}`
+  const fullPath = path.join(uploadsDir, fileName)
+  
+  // Convert file to buffer and save
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+  fs.writeFileSync(fullPath, buffer)
+  
+  return filePath
 }

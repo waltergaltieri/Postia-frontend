@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { TemplateStorage } from '../storage'
+import { TemplateRepository } from '@/lib/database/repositories/TemplateRepository'
 
 /**
  * GET /api/templates/[id]
@@ -11,7 +11,8 @@ export async function GET(
 ) {
   try {
     const templateId = params.id
-    const template = TemplateStorage.getById(templateId)
+    const templateRepo = new TemplateRepository()
+    const template = templateRepo.findById(templateId)
 
     if (!template) {
       return NextResponse.json(
@@ -42,26 +43,53 @@ export async function GET(
 }
 
 /**
- * PUT /api/templates/[id]
+ * PATCH /api/templates/[id]
  * Update a template
  */
-export async function PUT(
+export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const templateId = params.id
     const body = await req.json()
-
-    const updatedTemplate = TemplateStorage.update(templateId, body)
-
-    if (!updatedTemplate) {
+    
+    const templateRepo = new TemplateRepository()
+    
+    // Check if template exists
+    if (!templateRepo.exists(templateId)) {
       return NextResponse.json(
         {
           success: false,
           message: 'Plantilla no encontrada',
         },
         { status: 404 }
+      )
+    }
+    
+    // Check name availability if name is being updated
+    if (body.name) {
+      const template = templateRepo.findById(templateId)
+      if (template && !templateRepo.isNameAvailable(template.workspaceId, body.name, templateId)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Ya existe una plantilla con ese nombre en este workspace',
+          },
+          { status: 400 }
+        )
+      }
+    }
+
+    const updatedTemplate = templateRepo.update(templateId, body)
+
+    if (!updatedTemplate) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Error al actualizar la plantilla',
+        },
+        { status: 500 }
       )
     }
 
@@ -95,10 +123,10 @@ export async function DELETE(
     const templateId = params.id
     console.log('Attempting to delete template:', templateId)
     
-    const deleted = TemplateStorage.delete(templateId)
-    console.log('Delete result:', deleted)
-
-    if (!deleted) {
+    const templateRepo = new TemplateRepository()
+    
+    // Check if template exists
+    if (!templateRepo.exists(templateId)) {
       console.log('Template not found for deletion:', templateId)
       return NextResponse.json(
         {
@@ -106,6 +134,30 @@ export async function DELETE(
           message: 'Plantilla no encontrada',
         },
         { status: 404 }
+      )
+    }
+    
+    // Check if template is in use
+    if (templateRepo.isTemplateInUse(templateId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'No se puede eliminar una plantilla que está siendo utilizada en campañas o publicaciones',
+        },
+        { status: 400 }
+      )
+    }
+    
+    const deleted = templateRepo.delete(templateId)
+    console.log('Delete result:', deleted)
+
+    if (!deleted) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Error al eliminar la plantilla',
+        },
+        { status: 500 }
       )
     }
 
@@ -119,7 +171,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         success: false,
-        message: 'Error interno del servidor',
+        message: error instanceof Error ? error.message : 'Error interno del servidor',
         error: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

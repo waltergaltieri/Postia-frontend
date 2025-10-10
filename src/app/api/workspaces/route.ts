@@ -1,59 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { WorkspaceRepository } from '@/lib/database/repositories/WorkspaceRepository'
+import { withAuth, AuthenticatedRequest } from '@/app/api/auth/middleware'
+import '@/lib/database/auto-init' // Auto-initialize database
 
 /**
  * GET /api/workspaces
  * Get all workspaces for the authenticated user's agency
  */
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
-
+    console.log('Workspaces API called')
     
-    // Return mock workspaces for now
-    const mockWorkspaces = [
-      {
-        id: 'workspace-001',
-        agencyId: 'agency-demo-001',
-        name: 'Cliente Restaurante La Tradición',
-        branding: {
-          primaryColor: '#e11d48',
-          secondaryColor: '#64748b',
-          colors: {
-            primary: '#e11d48',
-            secondary: '#64748b',
-          },
-          logo: '/logos/restaurante.png',
-          slogan: 'Sabores que conquistan corazones',
-          description: 'Restaurante familiar con tradición de 30 años especializado en cocina mediterránea',
-          whatsapp: '+52-555-0123',
+    const { user } = req
+    
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Usuario no autenticado',
         },
-        createdAt: '2025-01-15T10:00:00.000Z',
-        updatedAt: '2025-01-15T10:00:00.000Z',
-      },
-      {
-        id: 'workspace-002',
-        agencyId: 'agency-demo-001',
-        name: 'Cliente Fitness Revolution',
-        branding: {
-          primaryColor: '#059669',
-          secondaryColor: '#6b7280',
-          colors: {
-            primary: '#059669',
-            secondary: '#6b7280',
-          },
-          logo: '/logos/fitness.png',
-          slogan: 'Tu mejor versión te espera',
-          description: 'Gimnasio moderno con entrenadores certificados y tecnología de vanguardia',
-          whatsapp: '+52-555-0456',
-        },
-        createdAt: '2025-01-10T08:30:00.000Z',
-        updatedAt: '2025-01-10T08:30:00.000Z',
-      },
-    ]
+        { status: 401 }
+      )
+    }
+    
+    const workspaceRepo = new WorkspaceRepository()
+    
+    // Use the authenticated user's agency ID
+    console.log(`Getting workspaces for agency: ${user.agencyId}`)
+    const workspaces = workspaceRepo.findByAgencyId(user.agencyId)
 
     return NextResponse.json({
       success: true,
       message: 'Espacios de trabajo obtenidos exitosamente',
-      data: mockWorkspaces,
+      data: workspaces,
     })
   } catch (error) {
     console.error('Workspaces API error:', error)
@@ -66,43 +45,62 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     )
   }
-}
+})
 
 /**
  * POST /api/workspaces
  * Create a new workspace
  */
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
     console.log('Create workspace API called')
     
     const body = await req.json()
+    const { user } = req
     
-    // Return mock created workspace
-    const mockWorkspace = {
-      id: `workspace-${Date.now()}`,
-      agencyId: 'agency-demo-001',
+    if (!body.name) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'El nombre del workspace es requerido',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Usuario no autenticado',
+        },
+        { status: 401 }
+      )
+    }
+    
+    const workspaceRepo = new WorkspaceRepository()
+    
+    // Use the authenticated user's agency ID
+    const workspaceData = {
+      agencyId: user.agencyId,
       name: body.name,
       branding: {
         primaryColor: body.branding?.primaryColor || '#9333ea',
         secondaryColor: body.branding?.secondaryColor || '#737373',
-        colors: {
-          primary: body.branding?.primaryColor || '#9333ea',
-          secondary: body.branding?.secondaryColor || '#737373',
-        },
         logo: body.branding?.logo || '',
         slogan: body.branding?.slogan || '',
         description: body.branding?.description || '',
         whatsapp: body.branding?.whatsapp || '',
       },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     }
+
+    console.log(`Creating workspace for agency: ${user.agencyId}`)
+    const newWorkspace = workspaceRepo.create(workspaceData)
 
     return NextResponse.json({
       success: true,
       message: 'Espacio de trabajo creado exitosamente',
-      data: mockWorkspace,
+      data: newWorkspace,
     }, { status: 201 })
   } catch (error) {
     console.error('Create workspace API error:', error)
@@ -115,4 +113,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

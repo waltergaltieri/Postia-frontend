@@ -14,121 +14,7 @@ import { PublicationDetailModal } from '@/components/calendar'
 import { toast } from 'react-hot-toast'
 import '@/styles/calendar.css'
 
-// Mock data for publications
-const mockPublications: EventInput[] = [
-  {
-    id: '1',
-    title: '📷 Campaña Verano - Instagram',
-    start: new Date(2025, 9, 15, 10, 0).toISOString(), // October 15, 2025, 10:00 AM
-    end: new Date(2025, 9, 15, 10, 30).toISOString(),
-    backgroundColor: '#e1306c',
-    borderColor: '#e1306c',
-    className: 'fc-event-instagram',
-    extendedProps: {
-      socialNetwork: 'instagram',
-      campaignName: 'Campaña Verano 2025',
-      content:
-        'Descubre nuestra nueva colección de verano. ¡Colores vibrantes y diseños únicos te esperan! 🌞',
-      imageUrl: '/api/placeholder/400/400',
-      status: 'scheduled',
-      templateId: 'template-1',
-      resourceId: 'resource-1',
-    },
-  },
-  {
-    id: '2',
-    title: '📘 Promoción Especial - Facebook',
-    start: new Date(2025, 9, 16, 14, 0).toISOString(), // October 16, 2025, 2:00 PM
-    end: new Date(2025, 9, 16, 14, 30).toISOString(),
-    backgroundColor: '#1877f2',
-    borderColor: '#1877f2',
-    className: 'fc-event-facebook',
-    extendedProps: {
-      socialNetwork: 'facebook',
-      campaignName: 'Promoción Especial',
-      content:
-        '¡Oferta especial por tiempo limitado! 50% de descuento en productos seleccionados.',
-      imageUrl: '/api/placeholder/400/400',
-      status: 'scheduled',
-      templateId: 'template-2',
-      resourceId: 'resource-2',
-    },
-  },
-  {
-    id: '3',
-    title: '💼 Contenido Corporativo - LinkedIn',
-    start: new Date(2025, 9, 17, 9, 0).toISOString(), // October 17, 2025, 9:00 AM
-    end: new Date(2025, 9, 17, 9, 30).toISOString(),
-    backgroundColor: '#0a66c2',
-    borderColor: '#0a66c2',
-    className: 'fc-event-linkedin',
-    extendedProps: {
-      socialNetwork: 'linkedin',
-      campaignName: 'Contenido Corporativo',
-      content:
-        'Innovación y excelencia: los pilares de nuestro crecimiento empresarial.',
-      imageUrl: '/api/placeholder/400/400',
-      status: 'scheduled',
-      templateId: 'template-3',
-      resourceId: 'resource-3',
-    },
-  },
-  {
-    id: '4',
-    title: '🐦 Engagement Diario - Twitter',
-    start: new Date(2025, 9, 18, 16, 0).toISOString(), // October 18, 2025, 4:00 PM
-    end: new Date(2025, 9, 18, 16, 30).toISOString(),
-    backgroundColor: '#1da1f2',
-    borderColor: '#1da1f2',
-    className: 'fc-event-twitter',
-    extendedProps: {
-      socialNetwork: 'twitter',
-      campaignName: 'Engagement Diario',
-      content:
-        '¿Cuál es tu estrategia favorita para aumentar el engagement? Comparte tus tips 👇',
-      imageUrl: '/api/placeholder/400/400',
-      status: 'scheduled',
-      templateId: 'template-4',
-      resourceId: 'resource-4',
-    },
-  },
-  {
-    id: '5',
-    title: '📷 Stories Diarias - Instagram',
-    start: new Date(2025, 9, 20, 12, 0).toISOString(), // October 20, 2025, 12:00 PM
-    end: new Date(2025, 9, 20, 12, 30).toISOString(),
-    backgroundColor: '#e1306c',
-    borderColor: '#e1306c',
-    className: 'fc-event-instagram',
-    extendedProps: {
-      socialNetwork: 'instagram',
-      campaignName: 'Stories Diarias',
-      content: 'Contenido detrás de cámaras y momentos especiales 📸',
-      imageUrl: '/api/placeholder/400/400',
-      status: 'scheduled',
-      templateId: 'template-5',
-      resourceId: 'resource-5',
-    },
-  },
-  {
-    id: '6',
-    title: '💼 Networking Event - LinkedIn',
-    start: new Date(2025, 9, 22, 15, 0).toISOString(), // October 22, 2025, 3:00 PM
-    end: new Date(2025, 9, 22, 15, 30).toISOString(),
-    backgroundColor: '#0a66c2',
-    borderColor: '#0a66c2',
-    className: 'fc-event-linkedin',
-    extendedProps: {
-      socialNetwork: 'linkedin',
-      campaignName: 'Networking Professional',
-      content: 'Únete a nuestro evento de networking empresarial 🤝',
-      imageUrl: '/api/placeholder/400/400',
-      status: 'scheduled',
-      templateId: 'template-6',
-      resourceId: 'resource-6',
-    },
-  },
-]
+// No mock data - using real API data
 
 export default function CalendarPage() {
   const params = useParams()
@@ -137,8 +23,8 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<EventInput | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [calendarView, setCalendarView] = useState('dayGridMonth')
-  const [events, setEvents] = useState<EventInput[]>(mockPublications)
-  const [isCalendarLoading, setIsCalendarLoading] = useState(false)
+  const [events, setEvents] = useState<EventInput[]>([])
+  const [isCalendarLoading, setIsCalendarLoading] = useState(true)
   const calendarRef = useRef<FullCalendar>(null)
 
   // Ensure we have the correct workspace selected
@@ -153,6 +39,68 @@ export default function CalendarPage() {
       }
     }
   }, [workspaceId, currentWorkspace, switchWorkspace, workspaces])
+
+  // Load calendar events from API
+  useEffect(() => {
+    const loadCalendarEvents = async () => {
+      if (!currentWorkspace) return
+
+      setIsCalendarLoading(true)
+      try {
+        const response = await fetch(`/api/calendar?workspaceId=${currentWorkspace.id}`)
+        const data = await response.json()
+
+        if (data.success && data.data) {
+          // Transform API data to FullCalendar events
+          const calendarEvents: EventInput[] = data.data.map((publication: any) => ({
+            id: publication.id,
+            title: `${getSocialNetworkIcon(publication.socialNetwork)} ${publication.campaignName || 'Publicación'}`,
+            start: publication.scheduledDate,
+            end: new Date(new Date(publication.scheduledDate).getTime() + 30 * 60000).toISOString(),
+            backgroundColor: getSocialNetworkColor(publication.socialNetwork),
+            borderColor: getSocialNetworkColor(publication.socialNetwork),
+            className: `fc-event-${publication.socialNetwork}`,
+            extendedProps: {
+              socialNetwork: publication.socialNetwork,
+              campaignName: publication.campaignName,
+              content: publication.content,
+              imageUrl: publication.imageUrl || '/api/placeholder/400/400',
+              status: publication.status,
+              templateId: publication.templateId,
+              resourceId: publication.resourceId,
+            },
+          }))
+
+          setEvents(calendarEvents)
+        } else {
+          setEvents([])
+        }
+      } catch (error) {
+        console.error('Error loading calendar events:', error)
+        toast.error('Error al cargar eventos del calendario')
+        setEvents([])
+      } finally {
+        setIsCalendarLoading(false)
+      }
+    }
+
+    loadCalendarEvents()
+  }, [currentWorkspace])
+
+  const getSocialNetworkColor = (network: string) => {
+    switch (network) {
+      case 'instagram':
+        return '#e1306c'
+      case 'facebook':
+        return '#1877f2'
+      case 'linkedin':
+        return '#0a66c2'
+      case 'twitter':
+        return '#1da1f2'
+      default:
+        return '#6b7280'
+    }
+  }
 
   if (!currentWorkspace) {
     return (
@@ -189,13 +137,46 @@ export default function CalendarPage() {
     )
   }
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    if (!currentWorkspace) return
+
     setIsCalendarLoading(true)
-    // In a real app, this would fetch fresh data from the API
-    setTimeout(() => {
+    try {
+      const response = await fetch(`/api/calendar?workspaceId=${currentWorkspace.id}`)
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        const calendarEvents: EventInput[] = data.data.map((publication: any) => ({
+          id: publication.id,
+          title: `${getSocialNetworkIcon(publication.socialNetwork)} ${publication.campaignName || 'Publicación'}`,
+          start: publication.scheduledDate,
+          end: new Date(new Date(publication.scheduledDate).getTime() + 30 * 60000).toISOString(),
+          backgroundColor: getSocialNetworkColor(publication.socialNetwork),
+          borderColor: getSocialNetworkColor(publication.socialNetwork),
+          className: `fc-event-${publication.socialNetwork}`,
+          extendedProps: {
+            socialNetwork: publication.socialNetwork,
+            campaignName: publication.campaignName,
+            content: publication.content,
+            imageUrl: publication.imageUrl || '/api/placeholder/400/400',
+            status: publication.status,
+            templateId: publication.templateId,
+            resourceId: publication.resourceId,
+          },
+        }))
+
+        setEvents(calendarEvents)
+        toast.success('Calendario actualizado')
+      } else {
+        setEvents([])
+        toast.success('Calendario actualizado - Sin eventos')
+      }
+    } catch (error) {
+      console.error('Error refreshing calendar:', error)
+      toast.error('Error al actualizar el calendario')
+    } finally {
       setIsCalendarLoading(false)
-      toast.success('Calendario actualizado')
-    }, 1000)
+    }
   }
 
   const handleViewChange = (view: string) => {
@@ -292,7 +273,17 @@ export default function CalendarPage() {
                   <p className="text-sm font-medium text-secondary-600">
                     Esta Semana
                   </p>
-                  <p className="text-2xl font-bold text-secondary-900">4</p>
+                  <p className="text-2xl font-bold text-secondary-900">
+                    {(() => {
+                      const now = new Date()
+                      const weekStart = new Date(now.setDate(now.getDate() - now.getDay()))
+                      const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6))
+                      return events.filter(event => {
+                        const eventDate = new Date(event.start as string)
+                        return eventDate >= weekStart && eventDate <= weekEnd
+                      }).length
+                    })()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -306,7 +297,9 @@ export default function CalendarPage() {
                   <p className="text-sm font-medium text-secondary-600">
                     Campañas Activas
                   </p>
-                  <p className="text-2xl font-bold text-secondary-900">3</p>
+                  <p className="text-2xl font-bold text-secondary-900">
+                    {new Set(events.map(event => event.extendedProps?.campaignName).filter(Boolean)).size}
+                  </p>
                 </div>
               </div>
             </div>
@@ -320,7 +313,9 @@ export default function CalendarPage() {
                   <p className="text-sm font-medium text-secondary-600">
                     Redes Conectadas
                   </p>
-                  <p className="text-2xl font-bold text-secondary-900">4</p>
+                  <p className="text-2xl font-bold text-secondary-900">
+                    {new Set(events.map(event => event.extendedProps?.socialNetwork).filter(Boolean)).size}
+                  </p>
                 </div>
               </div>
             </div>
@@ -406,6 +401,29 @@ export default function CalendarPage() {
                 dayCellClassNames="hover:bg-secondary-50 transition-colors"
                 viewClassNames="modern-calendar"
               />
+
+              {/* Empty state when no events */}
+              {!isCalendarLoading && events.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-lg">
+                  <div className="text-center py-12">
+                    <div className="mx-auto h-12 w-12 text-secondary-400 mb-4">
+                      <HiCalendar className="h-12 w-12" />
+                    </div>
+                    <h3 className="text-lg font-medium text-secondary-900 mb-2">
+                      No hay publicaciones programadas
+                    </h3>
+                    <p className="text-secondary-600 mb-4">
+                      Crea una campaña para empezar a programar publicaciones en tu calendario
+                    </p>
+                    <Button
+                      onClick={() => window.location.href = `/workspace/${workspaceId}/campaigns`}
+                      variant="primary"
+                    >
+                      Crear Campaña
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

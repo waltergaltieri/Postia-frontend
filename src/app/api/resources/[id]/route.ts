@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ResourceStorage } from '../storage'
+import { ResourceRepository } from '@/lib/database/repositories/ResourceRepository'
 
 /**
  * GET /api/resources/[id]
- * Get a specific resource by ID or filename
+ * Get a specific resource by ID
  */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const identifier = params.id
-
-    // Try to find by ID first, then by filename
-    let resource = ResourceStorage.getById(identifier)
-    if (!resource) {
-      resource = ResourceStorage.getByFilename(identifier)
-    }
+    const resourceId = params.id
+    const resourceRepo = new ResourceRepository()
+    const resource = resourceRepo.findById(resourceId)
     
     if (!resource) {
       return NextResponse.json(
@@ -48,18 +44,18 @@ export async function GET(
 
 /**
  * PATCH /api/resources/[id]
- * Update a resource by ID or filename
+ * Update a resource by ID
  */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const identifier = params.id
+    const resourceId = params.id
     const body = await req.json()
     const { name } = body
 
-    console.log('PATCH resource - identifier:', identifier)
+    console.log('PATCH resource - ID:', resourceId)
     console.log('PATCH resource - new name:', name)
 
     if (!name) {
@@ -72,21 +68,11 @@ export async function PATCH(
       )
     }
 
-    // Debug: List all available resources
-    const allResources = ResourceStorage.getAll()
-    console.log('All available resources:', allResources.map(r => ({ id: r.id, name: r.name })))
-
-    // Try to find by ID first, then by filename
-    let resource = ResourceStorage.getById(identifier)
-    console.log('Found by ID:', resource ? 'YES' : 'NO')
+    const resourceRepo = new ResourceRepository()
     
-    if (!resource) {
-      resource = ResourceStorage.getByFilename(identifier)
-      console.log('Found by filename:', resource ? 'YES' : 'NO')
-    }
-
-    if (!resource) {
-      console.log('Resource not found with identifier:', identifier)
+    // Check if resource exists
+    if (!resourceRepo.exists(resourceId)) {
+      console.log('Resource not found with ID:', resourceId)
       return NextResponse.json(
         {
           success: false,
@@ -96,9 +82,19 @@ export async function PATCH(
       )
     }
 
-    console.log('Updating resource:', resource.id, 'with name:', name)
-    const updatedResource = ResourceStorage.update(resource.id, { name })
+    console.log('Updating resource:', resourceId, 'with name:', name)
+    const updatedResource = resourceRepo.update(resourceId, { name })
     console.log('Update result:', updatedResource)
+
+    if (!updatedResource) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Error al actualizar el recurso',
+        },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       success: true,
@@ -120,21 +116,18 @@ export async function PATCH(
 
 /**
  * DELETE /api/resources/[id]
- * Delete a resource by ID or filename
+ * Delete a resource by ID
  */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const identifier = params.id
+    const resourceId = params.id
+    const resourceRepo = new ResourceRepository()
 
-    // Try to find by ID first, then by filename
-    let resource = ResourceStorage.getById(identifier)
-    if (!resource) {
-      resource = ResourceStorage.getByFilename(identifier)
-    }
-
+    // Check if resource exists
+    const resource = resourceRepo.findById(resourceId)
     if (!resource) {
       return NextResponse.json(
         {
@@ -145,7 +138,41 @@ export async function DELETE(
       )
     }
 
-    const deleted = ResourceStorage.delete(resource.id)
+    // Check if resource is in use
+    if (resourceRepo.isResourceInUse(resourceId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'No se puede eliminar un recurso que está siendo utilizado en campañas o publicaciones',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Delete physical file
+    try {
+      const fs = require('fs')
+      const path = require('path')
+      const fullPath = path.join(process.cwd(), 'public', resource.filePath)
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath)
+      }
+    } catch (error) {
+      console.error('Error deleting physical file:', error)
+      // Continue with database deletion even if file deletion fails
+    }
+
+    const deleted = resourceRepo.delete(resourceId)
+
+    if (!deleted) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Error al eliminar el recurso',
+        },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       success: true,
@@ -156,7 +183,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         success: false,
-        message: 'Error interno del servidor',
+        message: error instanceof Error ? error.message : 'Error interno del servidor',
         error: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
