@@ -51,7 +51,7 @@ export interface SocialAccount {
   connectedAt?: Date
 }
 
-export type SocialNetwork = 'facebook' | 'instagram' | 'twitter' | 'linkedin'
+export type SocialNetwork = 'instagram' | 'linkedin' | 'tiktok'
 
 export interface Campaign {
   id: string
@@ -73,19 +73,15 @@ export interface Campaign {
 }
 
 export interface OptimizationSettings {
-  facebook?: {
-    tone: string
-    hashtags: boolean
-  }
   instagram?: {
     tone: string
     hashtags: boolean
   }
-  twitter?: {
+  linkedin?: {
     tone: string
     hashtags: boolean
   }
-  linkedin?: {
+  tiktok?: {
     tone: string
     hashtags: boolean
   }

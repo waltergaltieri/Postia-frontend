@@ -14,10 +14,10 @@ export interface AuthenticatedRequest extends NextRequest {
  * Authentication middleware for API routes
  * Validates JWT tokens and extracts user information
  */
-export async function withAuth(
+export function withAuth(
   handler: (req: AuthenticatedRequest) => Promise<NextResponse>
 ) {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest, context: { params: Promise<{}> }) => {
     try {
       const authorization = req.headers.get('authorization')
 

@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react'
+import React, { forwardRef, useId } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/utils'
 
@@ -58,7 +58,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const inputId = id || `input-${Math.random().toString(36).substring(2, 11)}`
+    const generatedId = useId()
+    const inputId = id || generatedId
     const hasError = Boolean(error)
     const inputVariant = hasError ? 'error' : variant
 

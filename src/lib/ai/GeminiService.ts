@@ -5,6 +5,7 @@ import {
   Template,
   CreateContentDescriptionData 
 } from '../database/types'
+import { getValidatedGeminiConfig } from './config/gemini-config'
 
 export interface GeminiConfig {
   apiKey: string
@@ -58,7 +59,7 @@ export class GeminiService {
   constructor(config: GeminiConfig) {
     this.config = {
       baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       ...config
     }
   }
@@ -430,11 +431,16 @@ No incluyas texto adicional fuera del JSON.
 
 // Factory function para crear instancia del servicio
 export function createGeminiService(): GeminiService {
-  const apiKey = process.env.GEMINI_API_KEY
-  
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY environment variable is required')
+  try {
+    const config = getValidatedGeminiConfig()
+    
+    return new GeminiService({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl,
+      model: config.defaultModel
+    })
+  } catch (error) {
+    console.error('❌ Error creando servicio de Gemini:', error)
+    throw error
   }
-
-  return new GeminiService({ apiKey })
 }

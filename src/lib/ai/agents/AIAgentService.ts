@@ -2,13 +2,15 @@ import { GeminiService } from '../GeminiService'
 import { AgentManager, AgentConfig } from './AgentManager'
 import { ContentCreatorAgent } from './ContentCreatorAgent'
 import { BrandStrategistAgent } from './BrandStrategistAgent'
-import { AgentTask, AgentMetrics } from './types'
+import { CampaignPlannerAgent } from './CampaignPlannerAgent'
+import { AgentTask, AgentMetrics, CampaignData, WorkspaceData, ResourceData, TemplateData, ContentPlanItem } from './types'
 
 export class AIAgentService {
   private geminiService: GeminiService
   private agentManager: AgentManager
   private contentCreator: ContentCreatorAgent
   private brandStrategist: BrandStrategistAgent
+  private campaignPlanner: CampaignPlannerAgent
   private tasks: Map<string, AgentTask> = new Map()
   private metrics: Map<string, AgentMetrics> = new Map()
 
@@ -23,6 +25,7 @@ export class AIAgentService {
     // Inicializar agentes especializados
     this.contentCreator = new ContentCreatorAgent(this.agentManager)
     this.brandStrategist = new BrandStrategistAgent(this.agentManager)
+    this.campaignPlanner = new CampaignPlannerAgent(this.agentManager)
 
     // Inicializar métricas para agentes predeterminados
     this.initializeMetrics()
@@ -210,6 +213,71 @@ export class AIAgentService {
     }
   }
 
+  // Métodos para Campaign Planner Agent
+
+  /**
+   * Planifica el contenido de una campaña
+   */
+  async planCampaignContent(params: {
+    campaign: CampaignData
+    workspace: WorkspaceData
+    resources: ResourceData[]
+    templates: TemplateData[]
+  }): Promise<ContentPlanItem[]> {
+    const startTime = Date.now()
+    try {
+      const result = await this.campaignPlanner.planCampaignContent(params)
+      this.updateMetrics('campaign-planner', startTime, true)
+      return result
+    } catch (error) {
+      this.updateMetrics('campaign-planner', startTime, false)
+      throw error
+    }
+  }
+
+  /**
+   * Regenera el plan completo de contenido de una campaña
+   */
+  async regenerateCampaignContent(params: {
+    campaign: CampaignData
+    workspace: WorkspaceData
+    resources: ResourceData[]
+    templates: TemplateData[]
+    previousPlan?: ContentPlanItem[]
+  }): Promise<ContentPlanItem[]> {
+    const startTime = Date.now()
+    try {
+      const result = await this.campaignPlanner.regenerateContentPlan(params)
+      this.updateMetrics('campaign-planner', startTime, true)
+      return result
+    } catch (error) {
+      this.updateMetrics('campaign-planner', startTime, false)
+      throw error
+    }
+  }
+
+  /**
+   * Regenera un elemento específico del plan de contenido
+   */
+  async regenerateSpecificContentItem(params: {
+    campaign: CampaignData
+    workspace: WorkspaceData
+    resources: ResourceData[]
+    templates: TemplateData[]
+    itemIndex: number
+    previousPlan: ContentPlanItem[]
+  }): Promise<ContentPlanItem> {
+    const startTime = Date.now()
+    try {
+      const result = await this.campaignPlanner.regenerateSpecificItem(params)
+      this.updateMetrics('campaign-planner', startTime, true)
+      return result
+    } catch (error) {
+      this.updateMetrics('campaign-planner', startTime, false)
+      throw error
+    }
+  }
+
   // Métodos para gestión de tareas
 
   /**
@@ -277,6 +345,15 @@ export class AIAgentService {
           break
         case 'analyze-brand':
           result = await this.analyzeBrand(task.input)
+          break
+        case 'plan-campaign-content':
+          result = await this.planCampaignContent(task.input)
+          break
+        case 'regenerate-content-plan':
+          result = await this.regenerateCampaignContent(task.input)
+          break
+        case 'regenerate-specific-item':
+          result = await this.regenerateSpecificContentItem(task.input)
           break
         default:
           throw new Error(`Unknown task type: ${task.type}`)

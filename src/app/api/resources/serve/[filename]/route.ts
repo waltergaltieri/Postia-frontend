@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ResourceStorage } from '../../storage'
+import { ResourceStorage } from '../../../storage'
 import fs from 'fs'
 import path from 'path'
 

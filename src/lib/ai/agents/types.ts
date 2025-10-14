@@ -121,6 +121,90 @@ export interface AnalyticsInterpreterAgent {
   generateReport: (data: any, timeframe: string) => Promise<string>
 }
 
+export interface CampaignPlannerAgent {
+  planCampaignContent: (params: {
+    campaign: CampaignData
+    workspace: WorkspaceData
+    resources: ResourceData[]
+    templates: TemplateData[]
+  }) => Promise<ContentPlanItem[]>
+  
+  regenerateContentPlan: (params: {
+    campaign: CampaignData
+    workspace: WorkspaceData
+    resources: ResourceData[]
+    templates: TemplateData[]
+    previousPlan?: ContentPlanItem[]
+  }) => Promise<ContentPlanItem[]>
+  
+  regenerateSpecificItem: (params: {
+    campaign: CampaignData
+    workspace: WorkspaceData
+    resources: ResourceData[]
+    templates: TemplateData[]
+    itemIndex: number
+    previousPlan: ContentPlanItem[]
+  }) => Promise<ContentPlanItem>
+}
+
+// Tipos de datos para el Campaign Planner
+export interface CampaignData {
+  id: string
+  name: string
+  objective: string
+  startDate: string
+  endDate: string
+  socialNetworks: string[]
+  intervalHours: number
+  contentType: 'unified' | 'optimized'
+  optimizationSettings?: Record<string, any>
+  prompt: string
+}
+
+export interface WorkspaceData {
+  id: string
+  name: string
+  branding: {
+    primaryColor: string
+    secondaryColor: string
+    logo?: string
+    slogan: string
+    description: string
+    whatsapp?: string
+  }
+}
+
+export interface ResourceData {
+  id: string
+  name: string
+  url: string
+  type: 'image' | 'video'
+  mimeType: string
+}
+
+export interface TemplateData {
+  id: string
+  name: string
+  type: 'single' | 'carousel'
+  socialNetworks: string[]
+  images: string[]
+}
+
+export interface ContentPlanItem {
+  id: string
+  title: string
+  description: string
+  socialNetwork: 'instagram' | 'tiktok' | 'linkedin'
+  scheduledDate: string
+  templateId?: string
+  resourceIds: string[]
+  contentType: 'text-only' | 'text-with-image' | 'text-with-carousel'
+  estimatedReach?: number
+  priority: 'high' | 'medium' | 'low'
+  tags: string[]
+  notes?: string
+}
+
 // Tipos para configuración avanzada de agentes
 
 export interface AgentPersonality {

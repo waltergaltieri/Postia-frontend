@@ -228,7 +228,7 @@ export async function exampleCustomAgentConfig() {
       id: 'social-media-scheduler',
       name: 'Programador de Redes Sociales',
       description: 'Especializado en programar y optimizar horarios de publicación',
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-flash-001',
       temperature: 0.4,
       maxTokens: 2048,
       systemPrompt: 'Eres un experto en programación de contenido para redes sociales. Tu objetivo es optimizar horarios y frecuencias de publicación.',

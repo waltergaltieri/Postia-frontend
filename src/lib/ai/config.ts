@@ -7,9 +7,9 @@ export const AI_CONFIG = {
   GEMINI: {
     API_KEY: process.env.GEMINI_API_KEY,
     BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
-    DEFAULT_MODEL: process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash',
-    PRO_MODEL: process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro',
-    VISION_MODEL: process.env.GEMINI_VISION_MODEL || 'gemini-1.5-flash'
+    DEFAULT_MODEL: process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash-001',
+    PRO_MODEL: process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro-001',
+    VISION_MODEL: process.env.GEMINI_VISION_MODEL || 'gemini-1.5-flash-001'
   },
 
   // Configuración de agentes
@@ -23,12 +23,12 @@ export const AI_CONFIG = {
 
   // Configuración de modelos por tipo de tarea
   MODEL_MAPPING: {
-    'content-generation': process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash',
-    'brand-analysis': process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro',
-    'strategy-development': process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro',
-    'campaign-optimization': process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash',
-    'visual-analysis': process.env.GEMINI_VISION_MODEL || 'gemini-1.5-flash',
-    'data-interpretation': process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro'
+    'content-generation': process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash-001',
+    'brand-analysis': process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro-001',
+    'strategy-development': process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro-001',
+    'campaign-optimization': process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash-001',
+    'visual-analysis': process.env.GEMINI_VISION_MODEL || 'gemini-1.5-flash-001',
+    'data-interpretation': process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro-001'
   },
 
   // Configuración de temperatura por tipo de agente

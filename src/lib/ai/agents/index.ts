@@ -5,6 +5,29 @@ export { AIAgentService, getAIAgentService, createAIAgentService } from './AIAge
 // Specialized agents
 export { ContentCreatorAgent } from './ContentCreatorAgent'
 export { BrandStrategistAgent } from './BrandStrategistAgent'
+export { CampaignPlannerAgent } from './CampaignPlannerAgent'
+
+// Phase 1 - Content Orchestration agents
+export { SemanticResourceAnalyzerAgent } from './SemanticResourceAnalyzerAgent'
+export { TemporalPlannerService } from './TemporalPlannerService'
+export { ContentIdeationOrchestratorAgent } from './ContentIdeationOrchestratorAgent'
+
+// Services
+export { getCampaignPlannerService, CampaignPlannerService } from '../services/CampaignPlannerService'
+export type {
+    GenerateContentPlanParams,
+    RegenerateContentPlanParams,
+    RegenerateContentItemParams
+} from '../services/CampaignPlannerService'
+
+// Phase 1 - Content Orchestration Service
+export { ContentOrchestrationService } from '../services/ContentOrchestrationService'
+export type {
+    ContentOrchestrationParams,
+    ContentOrchestrationResult,
+    ConsolidatedContentPlan,
+    QualityControlResult
+} from '../services/ContentOrchestrationService'
 
 // Types from AgentManager
 export type {
@@ -23,6 +46,7 @@ export type {
     AgentMetrics,
     ContentCreatorAgent as IContentCreatorAgent,
     BrandStrategistAgent as IBrandStrategistAgent,
+    CampaignPlannerAgent as ICampaignPlannerAgent,
     CampaignOptimizerAgent,
     VisualContentAdvisorAgent,
     AnalyticsInterpreterAgent,
@@ -50,7 +74,7 @@ export function createDefaultAgentConfig(
         id,
         name,
         description,
-        model: process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash',
+        model: process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash-001',
         temperature: 0.7,
         maxTokens: 4096,
         capabilities,
@@ -88,6 +112,15 @@ export function createBrandStrategistConfig(): AgentConfig {
     )
 }
 
+export function createCampaignPlannerConfig(): AgentConfig {
+    return createDefaultAgentConfig(
+        'campaign-planner',
+        'Planificador de Campañas',
+        'Especializado en planificar y estructurar contenido de campañas',
+        ['campaign-planning', 'content-strategy', 'brand-alignment', 'content-scheduling']
+    )
+}
+
 // Constants
 export const AGENT_CAPABILITIES = {
     CONTENT_GENERATION: 'content-generation',
@@ -97,6 +130,10 @@ export const AGENT_CAPABILITIES = {
     STRATEGY_DEVELOPMENT: 'strategy-development',
     MARKET_RESEARCH: 'market-research',
     CAMPAIGN_ANALYSIS: 'campaign-analysis',
+    CAMPAIGN_PLANNING: 'campaign-planning',
+    CONTENT_STRATEGY: 'content-strategy',
+    BRAND_ALIGNMENT: 'brand-alignment',
+    CONTENT_SCHEDULING: 'content-scheduling',
     PERFORMANCE_OPTIMIZATION: 'performance-optimization',
     DATA_ANALYSIS: 'data-analysis',
     VISUAL_PLANNING: 'visual-planning',
@@ -108,9 +145,9 @@ export const AGENT_CAPABILITIES = {
 } as const
 
 export const AGENT_MODELS = {
-    GEMINI_FLASH: 'gemini-1.5-flash',
-    GEMINI_PRO: 'gemini-1.5-pro',
-    GEMINI_VISION: 'gemini-1.5-flash'
+    GEMINI_FLASH: 'gemini-1.5-flash-001',
+    GEMINI_PRO: 'gemini-1.5-pro-001',
+    GEMINI_VISION: 'gemini-1.5-flash-001'
 } as const
 
 export const AGENT_TASK_TYPES = {
@@ -120,5 +157,13 @@ export const AGENT_TASK_TYPES = {
     ANALYZE_BRAND: 'analyze-brand',
     DEVELOP_STRATEGY: 'develop-strategy',
     ANALYZE_CAMPAIGN: 'analyze-campaign',
-    GENERATE_REPORT: 'generate-report'
+    PLAN_CAMPAIGN_CONTENT: 'plan-campaign-content',
+    REGENERATE_CONTENT_PLAN: 'regenerate-content-plan',
+    REGENERATE_SPECIFIC_ITEM: 'regenerate-specific-item',
+    GENERATE_REPORT: 'generate-report',
+    // Phase 1 tasks
+    ANALYZE_RESOURCES_TEMPLATES: 'analyze-resources-templates',
+    CALCULATE_TEMPORAL_SLOTS: 'calculate-temporal-slots',
+    GENERATE_CONTENT_IDEAS: 'generate-content-ideas',
+    ORCHESTRATE_CONTENT_PHASE1: 'orchestrate-content-phase1'
 } as const

@@ -17,7 +17,7 @@ const campaignStep1Schema = z
     startDate: z.date({ message: 'La fecha de inicio es requerida' }),
     endDate: z.date({ message: 'La fecha de fin es requerida' }),
     socialNetworks: z
-      .array(z.enum(['facebook', 'instagram', 'twitter', 'linkedin']))
+      .array(z.enum(['instagram', 'linkedin', 'tiktok']))
       .min(1, 'Selecciona al menos una red social'),
     interval: z
       .number()
@@ -45,7 +45,7 @@ const campaignStep1Schema = z
 type CampaignStep1Data = z.infer<typeof campaignStep1Schema>
 import { Input } from '@/components/common/Input'
 import { Button } from '@/components/common/Button'
-import { FaFacebook, FaInstagram, FaTwitter, FaLinkedin } from 'react-icons/fa'
+import { FaInstagram, FaLinkedin, FaTiktok } from 'react-icons/fa'
 import 'react-datepicker/dist/react-datepicker.css'
 
 interface CampaignDataStepProps {
@@ -59,10 +59,9 @@ const socialNetworkOptions: {
   label: string
   icon: React.ComponentType<any>
 }[] = [
-  { value: 'facebook', label: 'Facebook', icon: FaFacebook },
   { value: 'instagram', label: 'Instagram', icon: FaInstagram },
-  { value: 'twitter', label: 'Twitter', icon: FaTwitter },
   { value: 'linkedin', label: 'LinkedIn', icon: FaLinkedin },
+  { value: 'tiktok', label: 'TikTok', icon: FaTiktok },
 ]
 
 const toneOptions = [

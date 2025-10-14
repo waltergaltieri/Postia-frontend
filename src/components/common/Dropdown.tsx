@@ -3,6 +3,7 @@
 import React, { ReactNode, useState, useRef, useEffect } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/utils'
+import { useUniqueId } from '@/utils/id-generator'
 import { HiChevronDown, HiCheck } from 'react-icons/hi'
 
 const dropdownVariants = cva('relative inline-block text-left w-full', {
@@ -201,13 +202,13 @@ const Dropdown: React.FC<DropdownProps> = ({
     triggerRef.current?.focus()
   }
 
-  const dropdownId = `dropdown-${Math.random().toString(36).substr(2, 9)}`
+  const dropdownId = useUniqueId('dropdown')
 
   return (
     <div className="w-full">
       {label && (
         <label
-          htmlFor={dropdownId}
+          htmlFor={dropdownId || undefined}
           className={cn(
             'block text-sm font-medium text-secondary-700 mb-1',
             required && "after:content-['*'] after:ml-0.5 after:text-error-500"
@@ -220,7 +221,7 @@ const Dropdown: React.FC<DropdownProps> = ({
       <div ref={dropdownRef} className={cn(dropdownVariants({ size }))}>
         <button
           ref={triggerRef}
-          id={dropdownId}
+          id={dropdownId || undefined}
           type="button"
           className={cn(triggerVariants({ variant: triggerVariant, size }))}
           onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -229,7 +230,7 @@ const Dropdown: React.FC<DropdownProps> = ({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           aria-invalid={hasError}
-          aria-describedby={error ? `${dropdownId}-error` : undefined}
+          aria-describedby={error && dropdownId ? `${dropdownId}-error` : undefined}
         >
           <span className="flex items-center gap-2 truncate">
             {selectedOption?.icon}
@@ -264,7 +265,7 @@ const Dropdown: React.FC<DropdownProps> = ({
               </div>
             )}
 
-            <div role="listbox" aria-labelledby={dropdownId}>
+            <div role="listbox" aria-labelledby={dropdownId || undefined}>
               {filteredOptions.length === 0 ? (
                 <div className="py-2 px-3 text-sm text-secondary-500">
                   No se encontraron opciones
@@ -302,7 +303,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         )}
       </div>
 
-      {error && (
+      {error && dropdownId && (
         <p
           id={`${dropdownId}-error`}
           className="mt-1 text-xs text-error-600"

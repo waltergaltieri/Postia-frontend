@@ -55,7 +55,7 @@ export const campaignSchema = z
       message: 'La fecha de fin es requerida',
     }),
     socialNetworks: z
-      .array(z.enum(['facebook', 'instagram', 'twitter', 'linkedin']))
+      .array(z.enum(['instagram', 'linkedin', 'tiktok']))
       .min(1, 'Selecciona al menos una red social'),
     interval: z
       .number()
@@ -94,7 +94,7 @@ export const templateSchema = z.object({
   name: z.string().min(1, 'El nombre del template es requerido'),
   type: z.enum(['single', 'carousel']),
   socialNetworks: z
-    .array(z.enum(['facebook', 'instagram', 'twitter', 'linkedin']))
+    .array(z.enum(['instagram', 'linkedin', 'tiktok']))
     .min(1, 'Selecciona al menos una red social'),
   images: z.array(z.instanceof(File)).min(1, 'Sube al menos una imagen'),
 })
@@ -140,11 +140,10 @@ export const aiCampaignConfigSchema = z
     platformDistribution: z.object({
       instagram: z.number().min(0).max(100),
       linkedin: z.number().min(0).max(100),
-      twitter: z.number().min(0).max(100),
-      facebook: z.number().min(0).max(100),
+      tiktok: z.number().min(0).max(100),
     }).refine(
       (data) => {
-        const total = data.instagram + data.linkedin + data.twitter + data.facebook;
+        const total = data.instagram + data.linkedin + data.tiktok;
         return total === 100;
       },
       {
