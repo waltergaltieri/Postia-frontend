@@ -159,6 +159,7 @@ export interface CampaignData {
   contentType: 'unified' | 'optimized'
   optimizationSettings?: Record<string, any>
   prompt: string
+  templateIds?: string[] // Plantillas específicas seleccionadas para esta campaña
 }
 
 export interface WorkspaceData {
@@ -188,6 +189,7 @@ export interface TemplateData {
   type: 'single' | 'carousel'
   socialNetworks: string[]
   images: string[]
+  description?: string // Descripción de cuándo y cómo usar esta plantilla
 }
 
 export interface ContentPlanItem {

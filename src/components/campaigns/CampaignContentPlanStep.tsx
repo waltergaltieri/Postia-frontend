@@ -28,7 +28,7 @@ interface CampaignContentPlanStepProps {
   workspace: WorkspaceData
   resources: ResourceData[]
   templates: TemplateData[]
-  onNext: () => void
+  onNext: (contentPlan: ContentPlanItem[]) => void
   onBack: () => void
 }
 
@@ -360,10 +360,24 @@ export function CampaignContentPlanStep({
                     {/* Resources and Templates */}
                     <div className="flex flex-wrap gap-4 text-sm text-secondary-600 mb-3">
                       {item.resourceIds && item.resourceIds.length > 0 ? (
-                        <span className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
-                          <HiPhotograph className="w-4 h-4 text-blue-600" />
-                          <span className="font-medium">{item.resourceIds.length} recurso(s)</span>
-                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {item.resourceIds.map((resourceId, resourceIndex) => {
+                            const resource = resources.find(r => r.id === resourceId)
+                            return (
+                              <span key={resourceIndex} className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded" title={resource ? `${resource.name} (${resource.type})` : 'Recurso no encontrado'}>
+                                <HiPhotograph className="w-4 h-4 text-blue-600" />
+                                <span className="font-medium">
+                                  {resource ? resource.name : `Recurso ${resourceIndex + 1}`}
+                                </span>
+                                {resource && (
+                                  <span className="text-xs text-blue-500 ml-1">
+                                    ({resource.type})
+                                  </span>
+                                )}
+                              </span>
+                            )
+                          })}
+                        </div>
                       ) : (
                         <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded">
                           <HiPhotograph className="w-4 h-4 text-gray-400" />
@@ -372,9 +386,16 @@ export function CampaignContentPlanStep({
                       )}
                       
                       {item.templateId ? (
-                        <span className="flex items-center gap-1 bg-purple-50 px-2 py-1 rounded">
+                        <span className="flex items-center gap-1 bg-purple-50 px-2 py-1 rounded" title={`${templates.find(t => t.id === item.templateId)?.name || 'Template'} (${templates.find(t => t.id === item.templateId)?.type || 'unknown'})`}>
                           <HiViewGrid className="w-4 h-4 text-purple-600" />
-                          <span className="font-medium">Template asignado</span>
+                          <span className="font-medium">
+                            {templates.find(t => t.id === item.templateId)?.name || 'Template asignado'}
+                          </span>
+                          {templates.find(t => t.id === item.templateId) && (
+                            <span className="text-xs text-purple-500 ml-1">
+                              ({templates.find(t => t.id === item.templateId)?.type})
+                            </span>
+                          )}
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded">
@@ -521,7 +542,7 @@ export function CampaignContentPlanStep({
         
         <button
           type="button"
-          onClick={onNext}
+          onClick={() => onNext(contentPlan)}
           disabled={contentPlan.length === 0 || isGenerating}
           className={cn(
             'px-6 py-2 text-sm font-medium rounded-lg transition-colors',

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ResourceRepository } from '@/lib/database/repositories/ResourceRepository'
+import { WorkspaceRepository } from '@/lib/database/repositories/WorkspaceRepository'
+import { getResourceAnalysisService } from '@/lib/ai/services/ResourceAnalysisService'
 
 /**
  * GET /api/resources
@@ -132,6 +134,10 @@ export async function POST(req: NextRequest) {
       // Store the resource in database
       const resource = resourceRepo.create(resourceData)
       uploadedResources.push(resource)
+
+      // 🚀 NUEVA FUNCIONALIDAD: Analizar recurso en background
+      // Esto no bloquea la respuesta al usuario
+      analyzeResourceInBackground(resource, workspaceId)
     }
 
     if (uploadedResources.length === 0) {
@@ -185,4 +191,64 @@ async function saveFileToUploads(file: File): Promise<string> {
   fs.writeFileSync(fullPath, buffer)
   
   return filePath
+}
+
+/**
+ * Analyze resource in background after upload
+ * This doesn't block the user response but pre-computes AI analysis
+ */
+async function analyzeResourceInBackground(resource: any, workspaceId: string) {
+  try {
+    console.log(`🔍 Starting background analysis for resource: ${resource.name}`)
+    
+    // Get workspace data for analysis
+    const workspaceRepo = new WorkspaceRepository()
+    const workspace = workspaceRepo.findById(workspaceId)
+    
+    if (!workspace) {
+      console.warn(`⚠️ Workspace ${workspaceId} not found for analysis`)
+      return
+    }
+
+    // Convert to ResourceData format
+    const resourceData = {
+      id: resource.id,
+      name: resource.name,
+      url: resource.url,
+      type: resource.type,
+      mimeType: resource.mimeType
+    }
+
+    // Convert to WorkspaceData format
+    const workspaceData = {
+      id: workspace.id,
+      name: workspace.name,
+      branding: {
+        primaryColor: workspace.branding?.primaryColor || '#3B82F6',
+        secondaryColor: workspace.branding?.secondaryColor || '#6B7280',
+        logo: workspace.branding?.logo || '',
+        slogan: workspace.branding?.slogan || '',
+        description: workspace.branding?.description || '',
+        whatsapp: workspace.branding?.whatsapp || ''
+      }
+    }
+
+    // Start analysis (non-blocking)
+    const analysisService = getResourceAnalysisService()
+    const analysisResult = await analysisService.analyzeResourceOnUpload(
+      resourceData,
+      workspaceData
+    )
+
+    console.log(`✅ Background analysis completed for resource: ${resource.name}`)
+    console.log(`📊 Analysis summary:`, {
+      description: analysisResult.visualAnalysis.description,
+      suggestedUses: analysisResult.visualAnalysis.suggestedUse,
+      mood: analysisResult.visualAnalysis.mood
+    })
+
+  } catch (error) {
+    console.error(`❌ Background analysis failed for resource ${resource.name}:`, error)
+    // Don't throw - this is background processing
+  }
 }

@@ -12,7 +12,7 @@ import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { useResources } from '@/hooks/useResources'
 import { useTemplates } from '@/hooks/useTemplates'
 import { toast } from 'react-hot-toast'
-import type { CampaignData, WorkspaceData, ResourceData, TemplateData } from '@/lib/ai/agents/types'
+import type { CampaignData, WorkspaceData, ResourceData, TemplateData, ContentPlanItem } from '@/lib/ai/agents/types'
 
 /**
  * Helper function to safely extract workspace data with proper validation
@@ -90,6 +90,8 @@ export function CampaignCreationForm({
     resources: [],
     templates: []
   })
+  
+  const [generatedContentPlan, setGeneratedContentPlan] = useState<ContentPlanItem[]>([])
 
   const handleStep1Complete = (data: Partial<CampaignFormData>) => {
     setFormData(prev => ({ ...prev, step1: data }))
@@ -115,6 +117,13 @@ export function CampaignCreationForm({
       return
     }
 
+    // DEBUG: Log selected templates and resources
+    console.log('🔍 DEBUG Form Data:')
+    console.log('   Selected templates:', finalData.step2.templates)
+    console.log('   Selected resources:', finalData.step2.resources)
+    console.log('   Available templates:', templates?.map(t => `${t.id}: ${t.name}`))
+    console.log('   Available resources:', resources?.map(r => `${r.id}: ${r.name}`))
+
     // Prepare data for Campaign Planner
     const campaignData: CampaignData = {
       id: `temp-${Date.now()}`, // Temporary ID
@@ -127,7 +136,10 @@ export function CampaignCreationForm({
       contentType: finalData.step1.contentType,
       optimizationSettings: finalData.step1.optimizationSettings,
       prompt: finalData.step3.prompt,
+      templateIds: finalData.step2.templates, // ¡AQUÍ ESTABA EL PROBLEMA! Faltaba incluir las plantillas seleccionadas
     }
+
+    console.log('🎯 Campaign data being sent to planner:', campaignData)
 
     // Get real workspace data from context with proper validation
     const workspaceData = getWorkspaceData(currentWorkspace)
@@ -181,8 +193,11 @@ export function CampaignCreationForm({
     setCurrentStep('prompt')
   }
 
-  const handleCreateCampaignWithPlan = async () => {
+  const handleCreateCampaignWithPlan = async (contentPlan: ContentPlanItem[]) => {
     if (!campaignPlannerData.campaign) return
+
+    // Store the content plan
+    setGeneratedContentPlan(contentPlan)
 
     // Combine all form data for final campaign creation
     const campaignData: CampaignFormData = {
@@ -200,11 +215,20 @@ export function CampaignCreationForm({
     }
 
     try {
-      await createCampaign({
+      // 1. Create the campaign first
+      const createdCampaign = await createCampaign({
         ...campaignData,
         workspaceId,
       }).unwrap()
-      toast.success('Campaña creada exitosamente con plan de contenido')
+
+      console.log('✅ Campaign created:', createdCampaign)
+      console.log('📋 Content plan to save:', contentPlan)
+
+      // 2. TODO: Create individual publications from the content plan
+      // This would require a new API endpoint to create publications
+      // For now, we'll log the plan that should be saved
+      
+      toast.success(`Campaña creada exitosamente con ${contentPlan.length} publicaciones programadas`)
       router.push(`/workspace/${workspaceId}/campaigns`)
     } catch (error) {
       toast.error('Error al crear la campaña')

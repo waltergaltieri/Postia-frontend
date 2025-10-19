@@ -28,7 +28,8 @@ export default function Phase1TestComponent() {
     socialNetworks: ['instagram', 'facebook', 'linkedin'],
     intervalHours: 8,
     contentType: 'optimized',
-    prompt: 'Crear contenido atractivo que destaque los beneficios únicos del producto, dirigido a profesionales jóvenes interesados en tecnología e innovación.'
+    prompt: 'Crear contenido atractivo que destaque los beneficios únicos del producto, dirigido a profesionales jóvenes interesados en tecnología e innovación.',
+    templateIds: ['template-002'] // Solo plantilla carousel (sin single)
   }
 
   const testWorkspace: WorkspaceData = {
@@ -73,21 +74,24 @@ export default function Phase1TestComponent() {
       name: 'Single Post Moderno',
       type: 'single',
       socialNetworks: ['instagram', 'facebook'],
-      images: ['/templates/single-modern.jpg']
+      images: ['/templates/single-modern.jpg'],
+      description: 'Plantilla moderna con diseño limpio, ideal para presentar productos o servicios de forma elegante y profesional'
     },
     {
       id: 'template-002',
       name: 'Carrusel Educativo',
       type: 'carousel',
       socialNetworks: ['instagram', 'linkedin'],
-      images: ['/templates/carousel-1.jpg', '/templates/carousel-2.jpg']
+      images: ['/templates/carousel-1.jpg', '/templates/carousel-2.jpg'],
+      description: 'Plantilla para contenido educativo paso a paso, perfecta para tutoriales, procesos o storytelling visual'
     },
     {
       id: 'template-003',
       name: 'Post Profesional LinkedIn',
       type: 'single',
       socialNetworks: ['linkedin'],
-      images: ['/templates/linkedin-professional.jpg']
+      images: ['/templates/linkedin-professional.jpg'],
+      description: 'Plantilla corporativa optimizada para LinkedIn, ideal para contenido profesional y de negocios'
     }
   ]
 
