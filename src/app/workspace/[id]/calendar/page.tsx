@@ -10,7 +10,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import { EventClickArg, EventInput } from '@fullcalendar/core'
 import { HiCalendar, HiFilter, HiRefresh } from 'react-icons/hi'
 import { Button } from '@/components/common'
-import { PublicationDetailModal } from '@/components/calendar'
+import { PublicationDetailModal, CalendarFilters, CalendarFilterOptions } from '@/components/calendar'
 import { toast } from 'react-hot-toast'
 import '@/styles/calendar.css'
 
@@ -25,6 +25,7 @@ export default function CalendarPage() {
   const [calendarView, setCalendarView] = useState('dayGridMonth')
   const [events, setEvents] = useState<EventInput[]>([])
   const [isCalendarLoading, setIsCalendarLoading] = useState(true)
+  const [filters, setFilters] = useState<CalendarFilterOptions>({})
   const calendarRef = useRef<FullCalendar>(null)
 
   // Ensure we have the correct workspace selected
@@ -47,29 +48,55 @@ export default function CalendarPage() {
 
       setIsCalendarLoading(true)
       try {
-        const response = await fetch(`/api/calendar?workspaceId=${currentWorkspace.id}`)
+        // Build query parameters with filters
+        const queryParams = new URLSearchParams({
+          workspaceId: currentWorkspace.id
+        })
+        
+        if (filters.socialNetworks?.length) {
+          queryParams.append('socialNetwork', filters.socialNetworks.join(','))
+        }
+        if (filters.generationStatus?.length) {
+          queryParams.append('generationStatus', filters.generationStatus.join(','))
+        }
+        if (filters.status?.length) {
+          queryParams.append('status', filters.status.join(','))
+        }
+        if (filters.campaignId) {
+          queryParams.append('campaignId', filters.campaignId)
+        }
+
+        const response = await fetch(`/api/calendar?${queryParams.toString()}`)
         const data = await response.json()
 
         if (data.success && data.data) {
           // Transform API data to FullCalendar events
-          const calendarEvents: EventInput[] = data.data.map((publication: any) => ({
-            id: publication.id,
-            title: `${getSocialNetworkIcon(publication.socialNetwork)} ${publication.campaignName || 'Publicación'}`,
-            start: publication.scheduledDate,
-            end: new Date(new Date(publication.scheduledDate).getTime() + 30 * 60000).toISOString(),
-            backgroundColor: getSocialNetworkColor(publication.socialNetwork),
-            borderColor: getSocialNetworkColor(publication.socialNetwork),
-            className: `fc-event-${publication.socialNetwork}`,
-            extendedProps: {
-              socialNetwork: publication.socialNetwork,
-              campaignName: publication.campaignName,
-              content: publication.content,
-              imageUrl: publication.imageUrl || '/api/placeholder/400/400',
-              status: publication.status,
-              templateId: publication.templateId,
-              resourceId: publication.resourceId,
-            },
-          }))
+          const calendarEvents: EventInput[] = data.data.flatMap((day: any) => 
+            day.publications.map((publication: any) => ({
+              id: publication.id,
+              title: `${getSocialNetworkIcon(publication.socialNetwork)} ${publication.campaignName || 'Publicación'}`,
+              start: publication.scheduledDate,
+              end: new Date(new Date(publication.scheduledDate).getTime() + 30 * 60000).toISOString(),
+              backgroundColor: getSocialNetworkColor(publication.socialNetwork),
+              borderColor: getSocialNetworkColor(publication.socialNetwork),
+              className: `fc-event-${publication.socialNetwork} ${publication.generationStatus === 'completed' ? 'fc-event-ai-generated' : ''}`,
+              extendedProps: {
+                socialNetwork: publication.socialNetwork,
+                campaignName: publication.campaignName,
+                content: publication.content,
+                imageUrl: publication.imageUrl || '/api/placeholder/400/400',
+                status: publication.status,
+                templateId: publication.templateId,
+                resourceId: publication.resourceId,
+                // AI Generation fields
+                generatedText: publication.generatedText,
+                generatedImageUrls: publication.generatedImageUrls,
+                generationStatus: publication.generationStatus,
+                generationMetadata: publication.generationMetadata,
+                campaignGenerationStatus: publication.campaignGenerationStatus,
+              },
+            }))
+          )
 
           setEvents(calendarEvents)
         } else {
@@ -85,7 +112,7 @@ export default function CalendarPage() {
     }
 
     loadCalendarEvents()
-  }, [currentWorkspace])
+  }, [currentWorkspace, filters])
 
   const getSocialNetworkColor = (network: string) => {
     switch (network) {
@@ -146,24 +173,32 @@ export default function CalendarPage() {
       const data = await response.json()
 
       if (data.success && data.data) {
-        const calendarEvents: EventInput[] = data.data.map((publication: any) => ({
-          id: publication.id,
-          title: `${getSocialNetworkIcon(publication.socialNetwork)} ${publication.campaignName || 'Publicación'}`,
-          start: publication.scheduledDate,
-          end: new Date(new Date(publication.scheduledDate).getTime() + 30 * 60000).toISOString(),
-          backgroundColor: getSocialNetworkColor(publication.socialNetwork),
-          borderColor: getSocialNetworkColor(publication.socialNetwork),
-          className: `fc-event-${publication.socialNetwork}`,
-          extendedProps: {
-            socialNetwork: publication.socialNetwork,
-            campaignName: publication.campaignName,
-            content: publication.content,
-            imageUrl: publication.imageUrl || '/api/placeholder/400/400',
-            status: publication.status,
-            templateId: publication.templateId,
-            resourceId: publication.resourceId,
-          },
-        }))
+        const calendarEvents: EventInput[] = data.data.flatMap((day: any) => 
+          day.publications.map((publication: any) => ({
+            id: publication.id,
+            title: `${getSocialNetworkIcon(publication.socialNetwork)} ${publication.campaignName || 'Publicación'}`,
+            start: publication.scheduledDate,
+            end: new Date(new Date(publication.scheduledDate).getTime() + 30 * 60000).toISOString(),
+            backgroundColor: getSocialNetworkColor(publication.socialNetwork),
+            borderColor: getSocialNetworkColor(publication.socialNetwork),
+            className: `fc-event-${publication.socialNetwork} ${publication.generationStatus === 'completed' ? 'fc-event-ai-generated' : ''}`,
+            extendedProps: {
+              socialNetwork: publication.socialNetwork,
+              campaignName: publication.campaignName,
+              content: publication.content,
+              imageUrl: publication.imageUrl || '/api/placeholder/400/400',
+              status: publication.status,
+              templateId: publication.templateId,
+              resourceId: publication.resourceId,
+              // AI Generation fields
+              generatedText: publication.generatedText,
+              generatedImageUrls: publication.generatedImageUrls,
+              generationStatus: publication.generationStatus,
+              generationMetadata: publication.generationMetadata,
+              campaignGenerationStatus: publication.campaignGenerationStatus,
+            },
+          }))
+        )
 
         setEvents(calendarEvents)
         toast.success('Calendario actualizado')
@@ -232,16 +267,10 @@ export default function CalendarPage() {
                 >
                   Actualizar
                 </Button>
-                <Button
-                  onClick={() =>
-                    toast('Filtros disponibles próximamente', { icon: 'ℹ️' })
-                  }
-                  variant="secondary"
-                  size="sm"
-                  icon={<HiFilter className="h-4 w-4" />}
-                >
-                  Filtros
-                </Button>
+                <CalendarFilters
+                  currentFilters={filters}
+                  onFiltersChange={setFilters}
+                />
               </div>
             </div>
           </div>

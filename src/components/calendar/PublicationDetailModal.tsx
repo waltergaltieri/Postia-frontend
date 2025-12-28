@@ -17,6 +17,7 @@ import { toast } from 'react-hot-toast'
 import DatePicker from 'react-datepicker'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { RegenerationModal } from './RegenerationModal'
 
 interface PublicationDetailModalProps {
   isOpen: boolean
@@ -34,6 +35,7 @@ export function PublicationDetailModal({
   const [isRescheduling, setIsRescheduling] = useState(false)
   const [newDate, setNewDate] = useState<Date | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showRegenerationModal, setShowRegenerationModal] = useState(false)
 
   if (!event) return null
 
@@ -43,6 +45,13 @@ export function PublicationDetailModal({
   const content = extendedProps?.content || 'Sin contenido'
   const imageUrl = extendedProps?.imageUrl || '/api/placeholder/400/400'
   const status = extendedProps?.status || 'scheduled'
+  
+  // AI Generation fields
+  const generatedText = extendedProps?.generatedText
+  const generatedImageUrls = extendedProps?.generatedImageUrls || []
+  const generationStatus = extendedProps?.generationStatus || 'pending'
+  const generationMetadata = extendedProps?.generationMetadata
+  const campaignGenerationStatus = extendedProps?.campaignGenerationStatus
 
   const getSocialNetworkInfo = (network: string) => {
     switch (network) {
@@ -74,8 +83,24 @@ export function PublicationDetailModal({
     }
   }
 
+  const getGenerationStatusInfo = (genStatus: string) => {
+    switch (genStatus) {
+      case 'pending':
+        return { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800', icon: '⏳' }
+      case 'generating':
+        return { label: 'Generando', color: 'bg-blue-100 text-blue-800', icon: '🔄' }
+      case 'completed':
+        return { label: 'Generado', color: 'bg-green-100 text-green-800', icon: '✅' }
+      case 'failed':
+        return { label: 'Error', color: 'bg-red-100 text-red-800', icon: '❌' }
+      default:
+        return { label: 'Desconocido', color: 'bg-gray-100 text-gray-800', icon: '❓' }
+    }
+  }
+
   const socialInfo = getSocialNetworkInfo(socialNetwork)
   const statusInfo = getStatusInfo(status)
+  const generationStatusInfo = getGenerationStatusInfo(generationStatus)
 
   const handlePublishNow = async () => {
     if (!event.id) return
@@ -114,38 +139,8 @@ export function PublicationDetailModal({
     }
   }
 
-  const handleRegenerate = async () => {
-    if (!event.id) return
-
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/calendar/${event.id}/regenerate`, {
-        method: 'POST',
-      })
-      
-      const data = await response.json()
-      
-      if (data.success && data.data) {
-        toast.success('Contenido regenerado con IA')
-        
-        if (onEventUpdate && event.id) {
-          onEventUpdate(event.id, {
-            ...event,
-            extendedProps: {
-              ...extendedProps,
-              content: data.data.content,
-            },
-          })
-        }
-      } else {
-        toast.error(data.message || 'Error al regenerar contenido')
-      }
-    } catch (error) {
-      console.error('Error regenerating:', error)
-      toast.error('Error al regenerar contenido')
-    } finally {
-      setIsLoading(false)
-    }
+  const handleOpenRegenerationModal = () => {
+    setShowRegenerationModal(true)
   }
 
   const handleReschedule = async () => {
@@ -250,28 +245,71 @@ export function PublicationDetailModal({
               <p className="text-sm text-secondary-600">{campaignName}</p>
             </div>
           </div>
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}
-          >
-            {statusInfo.label}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${generationStatusInfo.color}`}
+            >
+              {generationStatusInfo.icon} {generationStatusInfo.label}
+            </span>
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}
+            >
+              {statusInfo.label}
+            </span>
+          </div>
         </div>
 
         {/* Publication preview */}
         <div className="bg-secondary-50 rounded-lg p-4 mb-6">
           <div className="flex gap-4">
             <div className="flex-shrink-0">
-              <img
-                src={imageUrl}
-                alt="Vista previa"
-                className="w-20 h-20 rounded-lg object-cover border border-secondary-200"
-              />
+              {generatedImageUrls.length > 0 ? (
+                <div className="space-y-2">
+                  {generatedImageUrls.slice(0, 3).map((url: string, index: number) => (
+                    <img
+                      key={index}
+                      src={url}
+                      alt={`Imagen generada ${index + 1}`}
+                      className="w-20 h-20 rounded-lg object-cover border border-secondary-200"
+                    />
+                  ))}
+                  {generatedImageUrls.length > 3 && (
+                    <div className="w-20 h-20 rounded-lg bg-secondary-200 border border-secondary-300 flex items-center justify-center text-xs text-secondary-600">
+                      +{generatedImageUrls.length - 3} más
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <img
+                  src={imageUrl}
+                  alt="Vista previa"
+                  className="w-20 h-20 rounded-lg object-cover border border-secondary-200"
+                />
+              )}
             </div>
             <div className="flex-1">
-              <h4 className="font-medium text-secondary-900 mb-2">Contenido</h4>
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="font-medium text-secondary-900">Contenido</h4>
+                {generationStatus === 'completed' && generatedText && (
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                    ✨ Generado con IA
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-secondary-700 leading-relaxed">
-                {content}
+                {generatedText || content}
               </p>
+              
+              {generationMetadata && (
+                <div className="mt-3 pt-3 border-t border-secondary-200">
+                  <div className="flex items-center gap-2 text-xs text-secondary-500">
+                    <span>Agente: {generationMetadata.agentUsed}</span>
+                    {generationMetadata.processingTimeMs && (
+                      <span>• Tiempo: {Math.round(generationMetadata.processingTimeMs / 1000)}s</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -367,9 +405,8 @@ export function PublicationDetailModal({
                 Publicar Ahora
               </Button>
               <Button
-                onClick={handleRegenerate}
+                onClick={handleOpenRegenerationModal}
                 variant="secondary"
-                loading={isLoading}
                 icon={<HiRefresh className="h-4 w-4" />}
                 className="flex-1 sm:flex-none"
               >
@@ -456,7 +493,7 @@ export function PublicationDetailModal({
           <summary className="cursor-pointer text-sm font-medium text-secondary-700 hover:text-secondary-900">
             Detalles técnicos
           </summary>
-          <div className="mt-3 p-4 bg-secondary-50 rounded-lg text-sm text-secondary-600">
+          <div className="mt-3 p-4 bg-secondary-50 rounded-lg text-sm text-secondary-600 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="font-medium">ID de Template:</span>
@@ -469,9 +506,95 @@ export function PublicationDetailModal({
                 {extendedProps?.resourceId || 'N/A'}
               </div>
             </div>
+            
+            {generationMetadata && (
+              <div className="border-t border-secondary-200 pt-4">
+                <h5 className="font-medium text-secondary-800 mb-3">Información de Generación IA</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="font-medium">Agente Utilizado:</span>
+                    <br />
+                    {generationMetadata.agentUsed || 'N/A'}
+                  </div>
+                  <div>
+                    <span className="font-medium">Tiempo de Procesamiento:</span>
+                    <br />
+                    {generationMetadata.processingTimeMs 
+                      ? `${Math.round(generationMetadata.processingTimeMs / 1000)}s`
+                      : 'N/A'
+                    }
+                  </div>
+                  <div>
+                    <span className="font-medium">Reintentos:</span>
+                    <br />
+                    {generationMetadata.retryCount || 0}
+                  </div>
+                  <div>
+                    <span className="font-medium">Fecha de Generación:</span>
+                    <br />
+                    {generationMetadata.generationTime 
+                      ? format(new Date(generationMetadata.generationTime), 'dd/MM/yyyy HH:mm', { locale: es })
+                      : 'N/A'
+                    }
+                  </div>
+                </div>
+                
+                {generationMetadata.textPrompt && (
+                  <div className="mt-3">
+                    <span className="font-medium">Prompt de Texto:</span>
+                    <p className="mt-1 text-xs bg-white p-2 rounded border">
+                      {generationMetadata.textPrompt}
+                    </p>
+                  </div>
+                )}
+                
+                {generationMetadata.imagePrompt && (
+                  <div className="mt-3">
+                    <span className="font-medium">Prompt de Imagen:</span>
+                    <p className="mt-1 text-xs bg-white p-2 rounded border">
+                      {generationMetadata.imagePrompt}
+                    </p>
+                  </div>
+                )}
+                
+                {generationMetadata.resourcesUsed && generationMetadata.resourcesUsed.length > 0 && (
+                  <div className="mt-3">
+                    <span className="font-medium">Recursos Utilizados:</span>
+                    <p className="mt-1 text-xs">
+                      {generationMetadata.resourcesUsed.join(', ')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {campaignGenerationStatus && (
+              <div className="border-t border-secondary-200 pt-4">
+                <div>
+                  <span className="font-medium">Estado de Campaña:</span>
+                  <br />
+                  <span className={`inline-block px-2 py-1 rounded text-xs ${
+                    campaignGenerationStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                    campaignGenerationStatus === 'generating' ? 'bg-blue-100 text-blue-800' :
+                    campaignGenerationStatus === 'failed' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {campaignGenerationStatus}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </details>
       </div>
+
+      {/* Regeneration Modal */}
+      <RegenerationModal
+        isOpen={showRegenerationModal}
+        onClose={() => setShowRegenerationModal(false)}
+        event={event}
+        onEventUpdate={onEventUpdate}
+      />
     </Modal>
   )
 }

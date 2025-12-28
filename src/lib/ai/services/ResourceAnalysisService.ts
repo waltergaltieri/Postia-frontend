@@ -1,32 +1,15 @@
 import { AgentManager } from '../agents/AgentManager'
 import { VisualAnalyzerAgent } from '../agents/VisualAnalyzerAgent'
+import { CarouselAnalyzerAgent } from '../agents/CarouselAnalyzerAgent'
 import { SemanticResourceAnalyzerAgent } from '../agents/SemanticResourceAnalyzerAgent'
 import { ResourceAnalysisRepository } from '../../database/repositories/ResourceAnalysisRepository'
 import { TemplateAnalysisRepository } from '../../database/repositories/TemplateAnalysisRepository'
 import type { ResourceData, TemplateData, WorkspaceData } from '../agents/types'
 import type { ResourceAnalysis } from '../agents/VisualAnalyzerAgent'
+import type { CarouselAnalysis } from '../agents/CarouselAnalyzerAgent'
 import type { SemanticAnalysisResult } from '../agents/SemanticResourceAnalyzerAgent'
-
-export interface ResourceAnalysisRecord {
-  id: string
-  resourceId: string
-  workspaceId: string
-  visualAnalysis: ResourceAnalysis
-  semanticAnalysis?: any
-  analysisVersion: string
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface TemplateAnalysisRecord {
-  id: string
-  templateId: string
-  workspaceId: string
-  semanticAnalysis: any
-  analysisVersion: string
-  createdAt: Date
-  updatedAt: Date
-}
+import type { ResourceAnalysisRecord } from '../../database/repositories/ResourceAnalysisRepository'
+import type { TemplateAnalysisRecord } from '../../database/repositories/TemplateAnalysisRepository'
 
 /**
  * Service for analyzing resources and templates immediately upon upload/creation
@@ -35,10 +18,11 @@ export interface TemplateAnalysisRecord {
 export class ResourceAnalysisService {
   private agentManager: AgentManager
   private visualAnalyzer: VisualAnalyzerAgent
+  private carouselAnalyzer: CarouselAnalyzerAgent
   private semanticAnalyzer: SemanticResourceAnalyzerAgent
   private resourceAnalysisRepo: ResourceAnalysisRepository
   private templateAnalysisRepo: TemplateAnalysisRepository
-  private analysisVersion = '1.0'
+  private analysisVersion = '2.0' // Incrementado para las nuevas funcionalidades
 
   constructor() {
     // Import GeminiService for AgentManager
@@ -47,6 +31,7 @@ export class ResourceAnalysisService {
     
     this.agentManager = new AgentManager(geminiService)
     this.visualAnalyzer = new VisualAnalyzerAgent(this.agentManager)
+    this.carouselAnalyzer = new CarouselAnalyzerAgent(this.agentManager)
     this.semanticAnalyzer = new SemanticResourceAnalyzerAgent(this.agentManager)
     this.resourceAnalysisRepo = new ResourceAnalysisRepository()
     this.templateAnalysisRepo = new TemplateAnalysisRepository()
@@ -118,7 +103,28 @@ export class ResourceAnalysisService {
     console.log(`🎨 Starting background analysis for template: ${template.name}`)
 
     try {
-      // Semantic analysis for template
+      let detailedAnalysis: any = null
+
+      // Check if it's a carousel template for detailed visual analysis
+      if (template.type === 'carousel' && template.images && template.images.length > 0) {
+        console.log('🎠 Running detailed carousel analysis...')
+        const carouselAnalysis = await this.carouselAnalyzer.analyzeCarouselTemplate(template)
+        
+        detailedAnalysis = {
+          type: 'carousel',
+          carouselAnalysis,
+          overallDescription: carouselAnalysis.overallDescription,
+          imageAnalyses: carouselAnalysis.imageAnalyses,
+          narrativeFlow: carouselAnalysis.narrativeFlow,
+          consistencyScore: carouselAnalysis.consistencyScore,
+          dominantColors: carouselAnalysis.dominantColors,
+          designStyle: carouselAnalysis.designStyle
+        }
+
+        console.log(`🎨 Carousel analysis completed: ${carouselAnalysis.imageAnalyses.length} images analyzed`)
+      }
+
+      // Semantic analysis for template (always run)
       console.log('🧠 Running template semantic analysis...')
       const semanticResult = await this.semanticAnalyzer.analyzeResourcesAndTemplates({
         resources: [], // No resources for template analysis
@@ -130,11 +136,17 @@ export class ResourceAnalysisService {
 
       const semanticAnalysis = semanticResult.templates[0] || null
 
+      // Combine detailed analysis with semantic analysis
+      const combinedAnalysis = {
+        ...semanticAnalysis,
+        detailedVisualAnalysis: detailedAnalysis
+      }
+
       // Store analysis in database
       const analysisRecord = this.templateAnalysisRepo.create({
         templateId: template.id,
         workspaceId: workspace.id,
-        semanticAnalysis,
+        semanticAnalysis: combinedAnalysis,
         analysisVersion: this.analysisVersion
       })
 
@@ -142,6 +154,9 @@ export class ResourceAnalysisService {
         analysisId: analysisRecord.id,
         templateId: template.id,
         templateName: template.name,
+        templateType: template.type,
+        hasDetailedAnalysis: !!detailedAnalysis,
+        imagesAnalyzed: detailedAnalysis?.carouselAnalysis?.imageAnalyses?.length || 0,
         layoutStrengths: semanticAnalysis?.layoutStrengths,
         networkAptitude: semanticAnalysis?.networkAptitude
       })
@@ -236,66 +251,67 @@ export class ResourceAnalysisService {
     resource: ResourceData,
     workspace: WorkspaceData
   ): ResourceAnalysisRecord {
-    return {
-      id: `fallback-${resource.id}-${Date.now()}`,
+    const fallbackVisualAnalysis = {
+      id: resource.id,
+      name: resource.name,
+      type: resource.type,
+      description: `Recurso ${resource.type} disponible para usar en campañas`,
+      suggestedUse: resource.type === 'image' ? ['post', 'story'] : ['reel', 'video'],
+      compatibleNetworks: ['instagram', 'facebook', 'linkedin'],
+      contentTypes: resource.type === 'image' ? ['post', 'story', 'carousel'] : ['reel', 'video'],
+      mood: 'neutral',
+      colors: [],
+      elements: [resource.type],
+      lighting: 'natural',
+      composition: 'centrada',
+      style: 'moderno'
+    }
+
+    return this.resourceAnalysisRepo.create({
       resourceId: resource.id,
       workspaceId: workspace.id,
-      visualAnalysis: {
-        id: resource.id,
-        name: resource.name,
-        type: resource.type,
-        description: `Recurso ${resource.type} disponible para usar en campañas`,
-        suggestedUse: resource.type === 'image' ? ['post', 'story'] : ['reel', 'video'],
-        compatibleNetworks: ['instagram', 'facebook', 'linkedin'],
-        contentTypes: resource.type === 'image' ? ['post', 'story', 'carousel'] : ['reel', 'video'],
-        mood: 'neutral',
-        colors: [],
-        elements: [resource.type]
-      },
+      visualAnalysis: fallbackVisualAnalysis,
       semanticAnalysis: null,
-      analysisVersion: this.analysisVersion,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
+      analysisVersion: this.analysisVersion
+    })
   }
 
   private createFallbackTemplateAnalysis(
     template: TemplateData,
     workspace: WorkspaceData
   ): TemplateAnalysisRecord {
-    return {
-      id: `template-fallback-${template.id}-${Date.now()}`,
+    const fallbackSemanticAnalysis = {
+      templateId: template.id,
+      name: template.name,
+      layoutStrengths: template.type === 'single' ? ['Jerarquía visual clara'] : ['Narrativa secuencial'],
+      textCapacity: {
+        headline: 'medium',
+        subhead: 'medium',
+        cta: 'high'
+      },
+      networkAptitude: template.socialNetworks.reduce((acc, network) => {
+        acc[network] = 'Compatible'
+        return acc
+      }, {} as Record<string, string>),
+      colorMapping: {
+        background: workspace.branding?.primaryColor || '#FFFFFF',
+        accent: workspace.branding?.secondaryColor || '#3B82F6',
+        text: '#000000'
+      },
+      risks: ['Riesgos estándar de diseño'],
+      businessObjectiveSuitability: {
+        awareness: 'Apropiado',
+        engagement: 'Bueno',
+        conversion: 'Funcional'
+      }
+    }
+
+    return this.templateAnalysisRepo.create({
       templateId: template.id,
       workspaceId: workspace.id,
-      semanticAnalysis: {
-        templateId: template.id,
-        name: template.name,
-        layoutStrengths: template.type === 'single' ? ['Jerarquía visual clara'] : ['Narrativa secuencial'],
-        textCapacity: {
-          headline: 'medium',
-          subhead: 'medium',
-          cta: 'high'
-        },
-        networkAptitude: template.socialNetworks.reduce((acc, network) => {
-          acc[network] = 'Compatible'
-          return acc
-        }, {} as Record<string, string>),
-        colorMapping: {
-          background: workspace.branding?.primaryColor || '#FFFFFF',
-          accent: workspace.branding?.secondaryColor || '#3B82F6',
-          text: '#000000'
-        },
-        risks: ['Riesgos estándar de diseño'],
-        businessObjectiveSuitability: {
-          awareness: 'Apropiado',
-          engagement: 'Bueno',
-          conversion: 'Funcional'
-        }
-      },
-      analysisVersion: this.analysisVersion,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
+      semanticAnalysis: fallbackSemanticAnalysis,
+      analysisVersion: this.analysisVersion
+    })
   }
 }
 

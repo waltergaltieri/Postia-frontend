@@ -295,6 +295,67 @@
   pointer-events: none;
 }
 
+/* AI Generated Events */
+.fc-event-ai-generated {
+  position: relative;
+}
+
+.fc-event-ai-generated::before {
+  content: '✨';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.fc-event-ai-generated:hover::before {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+}
+
+/* Generation Status Indicators */
+.fc-event-generating {
+  animation: pulse-generating 2s infinite;
+  border: 2px dashed rgba(59, 130, 246, 0.5) !important;
+}
+
+@keyframes pulse-generating {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.fc-event-generation-failed {
+  border: 2px solid #ef4444 !important;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.2)) !important;
+}
+
+.fc-event-generation-failed::after {
+  content: '⚠️';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 10px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
 /* Custom scrollbar for time grid */
 .fc-scroller::-webkit-scrollbar {
   width: 6px;

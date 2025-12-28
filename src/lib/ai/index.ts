@@ -5,12 +5,14 @@ import { ContentGenerationService } from './ContentGenerationService'
 
 // Import AI Agents
 import { 
-  AIAgentService, 
-  getAIAgentService, 
-  createAIAgentService,
-  AgentManager,
-  ContentCreatorAgent,
-  BrandStrategistAgent
+  createContentGenerationAgent,
+  getAgentCapabilities,
+  estimateContentGenerationTime,
+  validateContentGenerationParams,
+  getSupportedContentTypes,
+  AIAgentService,
+  getAIAgentService,
+  createAIAgentService
 } from './agents'
 
 // Re-export services
@@ -18,12 +20,14 @@ export {
   GeminiService, 
   NanoBananaService, 
   ContentGenerationService,
+  createContentGenerationAgent,
+  getAgentCapabilities,
+  estimateContentGenerationTime,
+  validateContentGenerationParams,
+  getSupportedContentTypes,
   AIAgentService,
   getAIAgentService,
-  createAIAgentService,
-  AgentManager,
-  ContentCreatorAgent,
-  BrandStrategistAgent
+  createAIAgentService
 }
 
 // Types exports
@@ -95,7 +99,8 @@ export function createAIServices() {
       gemini: createGeminiService(),
       nanoBanana: createNanoBananaService(),
       contentGeneration: createContentGenerationService(),
-      agents: getAIAgentService()
+      agents: getAIAgentService(),
+      supportedContentTypes: getSupportedContentTypes()
     }
   } catch (error) {
     console.error('Failed to create AI services:', error)

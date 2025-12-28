@@ -126,6 +126,8 @@ export function CampaignContentPlanStep({
     }
   }
 
+
+
   const handleRegenerateItem = async (index: number) => {
     setRegeneratingIndex(index)
     setError(null)

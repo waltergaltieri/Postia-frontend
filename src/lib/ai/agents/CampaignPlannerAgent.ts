@@ -1,7 +1,7 @@
 import { AgentManager } from './AgentManager'
 import { VisualAnalyzerAgent } from './VisualAnalyzerAgent'
 import { SemanticResourceAnalyzerAgent } from './SemanticResourceAnalyzerAgent'
-import { getResourceAnalysisService } from '../services/ResourceAnalysisService'
+import { getClientResourceAnalysisService } from '../services/ClientResourceAnalysisService'
 import type {
   CampaignPlannerAgent as ICampaignPlannerAgent,
   CampaignData,
@@ -10,6 +10,31 @@ import type {
   TemplateData,
   ContentPlanItem
 } from './types'
+
+// Tipos extendidos para incluir análisis de IA
+interface ResourceWithAnalysis extends ResourceData {
+  aiAnalysis?: {
+    description: string
+    suggestedUse: string[]
+    compatibleNetworks: string[]
+    mood: string
+    colors: string[]
+    elements: string[]
+  } | null
+}
+
+interface TemplateWithAnalysis extends TemplateData {
+  aiAnalysis?: {
+    layoutStrengths: string[]
+    textCapacity: {
+      headline: string
+      subhead: string
+      cta: string
+    }
+    networkAptitude: Record<string, string>
+    businessObjectiveSuitability: Record<string, string>
+  } | null
+}
 
 export class CampaignPlannerAgent implements ICampaignPlannerAgent {
   private agentManager: AgentManager
@@ -33,7 +58,7 @@ export class CampaignPlannerAgent implements ICampaignPlannerAgent {
     console.log('� AOPTIMIZED: Using pre-computed analyses instead of generating new ones')
 
     // PASO 1: Obtener análisis pre-computados (mucho más rápido)
-    const analysisService = getResourceAnalysisService()
+    const analysisService = getClientResourceAnalysisService()
 
     console.log('📊 Looking up cached resource analyses...')
     const cachedResourceAnalyses = await analysisService.getCachedResourceAnalyses(
@@ -79,6 +104,26 @@ export class CampaignPlannerAgent implements ICampaignPlannerAgent {
       }
     }
 
+    // Calcular el número total de publicaciones basado en las fechas y el intervalo
+    const startDate = new Date(campaign.startDate)
+    const endDate = new Date(campaign.endDate)
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+    const totalPosts = Math.ceil((totalDays * 24) / campaign.intervalHours)
+
+    // PASO 2: Filtrar plantillas según las seleccionadas en la campaña
+    console.log('🔍 DEBUG: Campaign templateIds:', campaign.templateIds)
+    console.log('🔍 DEBUG: Available templates:', templates.map(t => `${t.id}: ${t.name}`))
+
+    let selectedTemplates = templates
+    if (campaign.templateIds && campaign.templateIds.length > 0) {
+      selectedTemplates = templates.filter(t => campaign.templateIds!.includes(t.id))
+      console.log('🎯 Using campaign-specific templates:', campaign.templateIds)
+      console.log('🎯 Filtered templates:', selectedTemplates.map(t => `${t.id}: ${t.name}`))
+    } else {
+      console.log('⚠️ No specific templates selected, using all available templates')
+      console.log('📋 All available templates:', templates.map(t => `${t.id}: ${t.name}`))
+    }
+
     // Combinar análisis cached + nuevos para crear análisis completos
     const allResourceAnalyses = [
       ...Object.values(cachedResourceAnalyses).map(cached => cached.visualAnalysis),
@@ -98,8 +143,8 @@ export class CampaignPlannerAgent implements ICampaignPlannerAgent {
       analysisTimestamp: new Date().toISOString()
     }
 
-    // 🎯 CLAVE: Crear mapeo de recursos con sus análisis detallados para el prompt
-    const resourcesWithAnalysis = resources.map(resource => {
+    // � CLAAVE: Crear mapeo de recursos con sus análisis detallados para el prompt
+    const resourcesWithAnalysis: ResourceWithAnalysis[] = resources.map(resource => {
       const cachedAnalysis = cachedResourceAnalyses[resource.id]
       const newAnalysis = newResourceAnalyses.find(analysis => analysis.id === resource.id)
 
@@ -119,9 +164,9 @@ export class CampaignPlannerAgent implements ICampaignPlannerAgent {
     })
 
     // 🎨 CLAVE: Crear mapeo de plantillas con sus análisis detallados para el prompt
-    const templatesWithAnalysis = selectedTemplates.map(template => {
+    const templatesWithAnalysis: TemplateWithAnalysis[] = selectedTemplates.map(template => {
       const cachedAnalysis = cachedTemplateAnalyses[template.id]
-      const newAnalysis = newSemanticAnalysis.templates.find(analysis => analysis.templateId === template.id)
+      const newAnalysis = newSemanticAnalysis.templates.find((analysis: any) => analysis.templateId === template.id)
 
       const analysis = cachedAnalysis?.semanticAnalysis || newAnalysis
 
@@ -142,26 +187,6 @@ export class CampaignPlannerAgent implements ICampaignPlannerAgent {
       semanticResources: allSemanticAnalysis.resources.length,
       semanticTemplates: allSemanticAnalysis.templates.length
     })
-
-    // Calcular el número total de publicaciones basado en las fechas y el intervalo
-    const startDate = new Date(campaign.startDate)
-    const endDate = new Date(campaign.endDate)
-    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-    const totalPosts = Math.ceil((totalDays * 24) / campaign.intervalHours)
-
-    // PASO 2: Filtrar plantillas según las seleccionadas en la campaña
-    console.log('🔍 DEBUG: Campaign templateIds:', campaign.templateIds)
-    console.log('🔍 DEBUG: Available templates:', templates.map(t => `${t.id}: ${t.name}`))
-
-    let selectedTemplates = templates
-    if (campaign.templateIds && campaign.templateIds.length > 0) {
-      selectedTemplates = templates.filter(t => campaign.templateIds!.includes(t.id))
-      console.log('🎯 Using campaign-specific templates:', campaign.templateIds)
-      console.log('🎯 Filtered templates:', selectedTemplates.map(t => `${t.id}: ${t.name}`))
-    } else {
-      console.log('⚠️ No specific templates selected, using all available templates')
-      console.log('📋 All available templates:', templates.map(t => `${t.id}: ${t.name}`))
-    }
 
     // PASO 3: Validar disponibilidad de recursos y plantillas
     console.log('🔍 Validating resources and templates...')
@@ -528,8 +553,8 @@ Responde ÚNICAMENTE con el JSON válido, sin texto adicional.
   private buildEnhancedCampaignPlanPrompt(params: {
     campaign: CampaignData
     workspace: WorkspaceData
-    resources: ResourceData[]
-    templates: TemplateData[]
+    resources: ResourceWithAnalysis[]
+    templates: TemplateWithAnalysis[]
     totalPosts: number
     resourceAnalyses: any[]
     semanticAnalysis: any
@@ -570,7 +595,7 @@ Responde ÚNICAMENTE con el JSON válido, sin texto adicional.
     }))
 
     // Determinar tipos de contenido disponibles basándose en plantillas SELECCIONADAS
-    const availableTemplateTypes = [...new Set(templates.map(t => t.type))]
+    const availableTemplateTypes = Array.from(new Set(templates.map(t => t.type)))
     const availableContentTypes: string[] = []
 
     // Siempre disponible
@@ -652,8 +677,8 @@ ${index + 1}. PLANTILLA: "${template.name}" (ID: ${template.id})
    ${analysis ? `
    - 🤖 FORTALEZAS DE DISEÑO: ${analysis.layoutStrengths.join(', ')}
    - 📝 CAPACIDAD DE TEXTO: Título ${analysis.textCapacity.headline}, Subtítulo ${analysis.textCapacity.subhead}, CTA ${analysis.textCapacity.cta}
-   - 📱 APTITUD POR RED: ${Object.entries(analysis.networkAptitude).map(([net, apt]) => `${net}: ${apt}`).join(', ')}
-   - 🎯 IDEAL PARA: ${Object.entries(analysis.businessObjectiveSuitability).map(([obj, suit]) => `${obj}: ${suit}`).join(', ')}` : '   - ⚠️ Sin análisis IA disponible'}
+   - 📱 APTITUD POR RED: ${Object.entries(analysis.networkAptitude).map(([net, apt]: [string, any]) => `${net}: ${apt}`).join(', ')}
+   - 🎯 IDEAL PARA: ${Object.entries(analysis.businessObjectiveSuitability).map(([obj, suit]: [string, any]) => `${obj}: ${suit}`).join(', ')}` : '   - ⚠️ Sin análisis IA disponible'}
 `
     }).join('\n') : 'No hay plantillas específicas disponibles'}
 

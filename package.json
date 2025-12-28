@@ -27,7 +27,15 @@
     "db:watch": "tsx src/lib/database/cli/monitoring.ts watch",
     "db:dashboard": "tsx src/lib/database/cli/dashboard.ts",
     "ai:test": "tsx src/lib/ai/test-agents.ts",
-    "ai:health": "tsx -e \"import { getAIAgentService } from './src/lib/ai/agents'; getAIAgentService().healthCheck().then(console.log)\""
+    "ai:health": "tsx -e \"import { getAIAgentService } from './src/lib/ai/agents'; getAIAgentService().healthCheck().then(console.log)\"",
+    "test:performance": "tsx src/lib/ai/__tests__/run-performance-tests.ts",
+    "test:performance:ci": "PERFORMANCE_TEST_ENV=ci tsx src/lib/ai/__tests__/run-performance-tests.ts",
+    "test:performance:prod": "PERFORMANCE_TEST_ENV=production tsx src/lib/ai/__tests__/run-performance-tests.ts",
+    "test:load": "vitest --run src/lib/ai/__tests__/performance.test.ts src/lib/ai/__tests__/api-load.test.ts src/lib/ai/__tests__/campaign-load.test.ts",
+    "test:e2e": "tsx src/__tests__/e2e/run-e2e-tests.ts",
+    "test:e2e:flow": "tsx src/__tests__/e2e/run-e2e-tests.ts --suite flow",
+    "test:e2e:api": "tsx src/__tests__/e2e/run-e2e-tests.ts --suite api",
+    "test:e2e:ui": "tsx src/__tests__/e2e/run-e2e-tests.ts --suite ui"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

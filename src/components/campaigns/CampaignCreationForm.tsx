@@ -6,6 +6,7 @@ import { CampaignDataStep } from '@/components/campaigns/CampaignDataStep'
 import { ResourceSelectionStep } from '@/components/campaigns/ResourceSelectionStep'
 import { CampaignPromptStep } from '@/components/campaigns/CampaignPromptStep'
 import { CampaignContentPlanStep } from '@/components/campaigns/CampaignContentPlanStep'
+import { ContentGenerationLoadingScreen } from '@/components/campaigns/ContentGenerationLoadingScreen'
 import { CampaignFormData } from '@/types'
 import { useCreateCampaignMutation } from '@/store/api/campaignsApi'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
@@ -50,7 +51,7 @@ interface CampaignCreationFormProps {
   workspaceId: string
 }
 
-export type CampaignStep = 'data' | 'resources' | 'prompt' | 'planner'
+export type CampaignStep = 'data' | 'resources' | 'prompt' | 'planner' | 'generating'
 
 export interface CampaignFormState {
   step1: Partial<CampaignFormData>
@@ -186,6 +187,9 @@ export function CampaignCreationForm({
       case 'planner':
         setCurrentStep('prompt')
         break
+      case 'generating':
+        setCurrentStep('planner')
+        break
     }
   }
 
@@ -216,20 +220,27 @@ export function CampaignCreationForm({
 
     try {
       // 1. Create the campaign first
-      const createdCampaign = await createCampaign({
+      const response = await createCampaign({
         ...campaignData,
         workspaceId,
       }).unwrap()
 
+      const createdCampaign = response.data
       console.log('✅ Campaign created:', createdCampaign)
       console.log('📋 Content plan to save:', contentPlan)
 
-      // 2. TODO: Create individual publications from the content plan
-      // This would require a new API endpoint to create publications
-      // For now, we'll log the plan that should be saved
+      // 2. Update campaign planner data with the real campaign ID
+      setCampaignPlannerData(prev => ({
+        ...prev,
+        campaign: prev.campaign ? {
+          ...prev.campaign,
+          id: createdCampaign.id
+        } : null
+      }))
+
+      // 3. Transition to generation step
+      setCurrentStep('generating')
       
-      toast.success(`Campaña creada exitosamente con ${contentPlan.length} publicaciones programadas`)
-      router.push(`/workspace/${workspaceId}/campaigns`)
     } catch (error) {
       toast.error('Error al crear la campaña')
       console.error('Error creating campaign:', error)
@@ -238,6 +249,36 @@ export function CampaignCreationForm({
 
   const handleCancel = () => {
     router.push(`/workspace/${workspaceId}/campaigns`)
+  }
+
+  const handleGenerationComplete = (campaignId: string) => {
+    // Show success message with campaign details
+    const campaignName = formData.step1.name || 'Nueva campaña'
+    toast.success(`¡Campaña "${campaignName}" creada y generada exitosamente!`, { duration: 5000 })
+    
+    // Redirect to campaigns list
+    router.push(`/workspace/${workspaceId}/campaigns`)
+  }
+
+  const handleGenerationCancel = () => {
+    setCurrentStep('planner')
+  }
+
+  const handleGenerationError = (error: string) => {
+    // Show detailed error message
+    toast.error(`Error en la generación: ${error}`, { duration: 8000 })
+    
+    // Provide recovery options
+    const shouldRetry = window.confirm(
+      'Hubo un error durante la generación de contenido. ¿Deseas volver al paso anterior para revisar la configuración o intentar nuevamente?'
+    )
+    
+    if (shouldRetry) {
+      setCurrentStep('planner')
+    } else {
+      // Go back to campaigns list
+      router.push(`/workspace/${workspaceId}/campaigns`)
+    }
   }
 
   return (
@@ -311,12 +352,25 @@ export function CampaignCreationForm({
               </div>
               <span className="ml-2 text-sm font-medium">Plan de Contenido</span>
             </div>
+
+            {currentStep === 'generating' && (
+              <>
+                <div className="w-6 h-px bg-secondary-200" />
+
+                <div className="flex items-center text-primary-600">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary-600 text-white">
+                    5
+                  </div>
+                  <span className="ml-2 text-sm font-medium">Generando Contenido</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* Form content */}
-      <div className={currentStep === 'planner' ? 'p-0' : 'p-8'}>
+      <div className={currentStep === 'planner' || currentStep === 'generating' ? 'p-0' : 'p-8'}>
         {currentStep === 'data' && (
           <CampaignDataStep
             initialData={formData.step1}
@@ -354,6 +408,20 @@ export function CampaignCreationForm({
             templates={campaignPlannerData.templates}
             onNext={handleCreateCampaignWithPlan}
             onBack={handlePlannerBack}
+          />
+        )}
+
+        {currentStep === 'generating' && campaignPlannerData.campaign && (
+          <ContentGenerationLoadingScreen
+            campaignId={campaignPlannerData.campaign.id}
+            contentPlan={generatedContentPlan}
+            workspaceId={workspaceId}
+            workspace={campaignPlannerData.workspace}
+            resources={campaignPlannerData.resources}
+            templates={campaignPlannerData.templates}
+            onComplete={handleGenerationComplete}
+            onCancel={handleGenerationCancel}
+            onError={handleGenerationError}
           />
         )}
       </div>

@@ -30,6 +30,21 @@ export interface CalendarPublication {
   status: 'scheduled' | 'published' | 'failed' | 'cancelled'
   publishedAt?: Date
   errorMessage?: string
+  // AI Content Generation fields
+  generatedText?: string
+  generatedImageUrls?: string[]
+  generationStatus: 'pending' | 'generating' | 'completed' | 'failed'
+  generationMetadata?: {
+    agentUsed: 'text-only' | 'text-image' | 'text-template' | 'carousel'
+    textPrompt: string
+    imagePrompt?: string
+    templateUsed?: string
+    resourcesUsed: string[]
+    generationTime: Date
+    retryCount: number
+    processingTimeMs: number
+  }
+  campaignGenerationStatus?: 'planning' | 'generating' | 'completed' | 'failed'
 }
 
 export interface CalendarWeek {
@@ -56,6 +71,8 @@ export interface CalendarFilters {
   campaignIds?: string[]
   socialNetworks?: SocialNetwork[]
   statuses?: ('scheduled' | 'published' | 'failed' | 'cancelled')[]
+  generationStatuses?: ('pending' | 'generating' | 'completed' | 'failed')[]
+  campaignGenerationStatuses?: ('planning' | 'generating' | 'completed' | 'failed')[]
 }
 
 export class CalendarService {
@@ -120,6 +137,16 @@ export class CalendarService {
       params.push(...filters.statuses)
     }
 
+    if (filters?.generationStatuses?.length) {
+      whereClause += ` AND p.generation_status IN (${filters.generationStatuses.map(() => '?').join(',')})`
+      params.push(...filters.generationStatuses)
+    }
+
+    if (filters?.campaignGenerationStatuses?.length) {
+      whereClause += ` AND c.generation_status IN (${filters.campaignGenerationStatuses.map(() => '?').join(',')})`
+      params.push(...filters.campaignGenerationStatuses)
+    }
+
     // Get daily aggregations
     const aggregationQuery = getDatabase().prepare(`
       SELECT 
@@ -150,6 +177,11 @@ export class CalendarService {
         p.status,
         p.published_at as publishedAt,
         p.error_message as errorMessage,
+        p.generated_text as generatedText,
+        p.generated_image_urls as generatedImageUrls,
+        p.generation_status as generationStatus,
+        p.generation_metadata as generationMetadata,
+        c.generation_status as campaignGenerationStatus,
         DATE(p.scheduled_date) as date
       FROM publications p
       JOIN campaigns c ON p.campaign_id = c.id
@@ -180,6 +212,11 @@ export class CalendarService {
         status: pub.status,
         publishedAt: pub.publishedAt ? new Date(pub.publishedAt) : undefined,
         errorMessage: pub.errorMessage,
+        generatedText: pub.generatedText,
+        generatedImageUrls: pub.generatedImageUrls ? JSON.parse(pub.generatedImageUrls) : undefined,
+        generationStatus: pub.generationStatus || 'pending',
+        generationMetadata: pub.generationMetadata ? JSON.parse(pub.generationMetadata) : undefined,
+        campaignGenerationStatus: pub.campaignGenerationStatus
       })
     })
 
@@ -367,7 +404,12 @@ export class CalendarService {
         p.scheduled_date as scheduledDate,
         p.status,
         p.published_at as publishedAt,
-        p.error_message as errorMessage
+        p.error_message as errorMessage,
+        p.generated_text as generatedText,
+        p.generated_image_urls as generatedImageUrls,
+        p.generation_status as generationStatus,
+        p.generation_metadata as generationMetadata,
+        c.generation_status as campaignGenerationStatus
       FROM publications p
       JOIN campaigns c ON p.campaign_id = c.id
       JOIN workspaces w ON c.workspace_id = w.id
@@ -391,6 +433,11 @@ export class CalendarService {
         ? new Date(result.publishedAt)
         : undefined,
       errorMessage: result.errorMessage,
+      generatedText: result.generatedText,
+      generatedImageUrls: result.generatedImageUrls ? JSON.parse(result.generatedImageUrls) : undefined,
+      generationStatus: result.generationStatus || 'pending',
+      generationMetadata: result.generationMetadata ? JSON.parse(result.generationMetadata) : undefined,
+      campaignGenerationStatus: result.campaignGenerationStatus
     }))
   }
 
@@ -459,7 +506,12 @@ export class CalendarService {
         p.scheduled_date as scheduledDate,
         p.status,
         p.published_at as publishedAt,
-        p.error_message as errorMessage
+        p.error_message as errorMessage,
+        p.generated_text as generatedText,
+        p.generated_image_urls as generatedImageUrls,
+        p.generation_status as generationStatus,
+        p.generation_metadata as generationMetadata,
+        c.generation_status as campaignGenerationStatus
       FROM publications p
       JOIN campaigns c ON p.campaign_id = c.id
       JOIN workspaces w ON c.workspace_id = w.id
@@ -484,6 +536,11 @@ export class CalendarService {
         ? new Date(result.publishedAt)
         : undefined,
       errorMessage: result.errorMessage,
+      generatedText: result.generatedText,
+      generatedImageUrls: result.generatedImageUrls ? JSON.parse(result.generatedImageUrls) : undefined,
+      generationStatus: result.generationStatus || 'pending',
+      generationMetadata: result.generationMetadata ? JSON.parse(result.generationMetadata) : undefined,
+      campaignGenerationStatus: result.campaignGenerationStatus
     }))
   }
 

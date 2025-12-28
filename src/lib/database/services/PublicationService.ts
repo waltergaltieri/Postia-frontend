@@ -9,6 +9,9 @@ import {
   CreatePublicationData,
   UpdatePublicationData,
   SocialNetwork,
+  RegenerationHistory,
+  CreateRegenerationHistoryData,
+  GenerationMetadata,
 } from '../types'
 
 /**
@@ -896,5 +899,249 @@ export class PublicationService {
     }
 
     return optimalTimes[socialNetwork]
+  }
+
+  /**
+   * Regenerate publication content with history tracking
+   */
+  public regeneratePublication(
+    publicationId: string,
+    newContent: string,
+    newImageUrls: string[],
+    newMetadata: GenerationMetadata,
+    agencyId: string,
+    customPrompt?: string,
+    reason: 'user_request' | 'error_recovery' | 'content_improvement' = 'user_request'
+  ): Publication {
+    const publication = this.publicationRepo.findByIdWithContext(publicationId)
+    if (!publication) {
+      throw new Error('Publication not found')
+    }
+
+    // Validate access
+    if (
+      !this.workspaceRepo.validateAgencyOwnership(
+        publication.workspace.id,
+        agencyId
+      )
+    ) {
+      throw new Error('Access denied')
+    }
+
+    // Validate publication can be regenerated
+    if (publication.status === 'published') {
+      throw new Error('Cannot regenerate a published publication')
+    }
+
+    // Store previous content in history
+    const historyData: CreateRegenerationHistoryData = {
+      publicationId,
+      previousContent: publication.content,
+      previousImageUrls: publication.generatedImageUrls || [],
+      previousMetadata: publication.generationMetadata,
+      newContent,
+      newImageUrls,
+      newMetadata,
+      customPrompt,
+      reason,
+      regeneratedAt: new Date()
+    }
+
+    // Create regeneration history record
+    this.createRegenerationHistory(historyData)
+
+    // Update publication with new content
+    const updateData: UpdatePublicationData = {
+      content: newContent,
+      generatedText: newContent,
+      generatedImageUrls: newImageUrls,
+      generationMetadata: newMetadata,
+      generationStatus: 'completed'
+    }
+
+    const updatedPublication = this.publicationRepo.update(publicationId, updateData)
+    if (!updatedPublication) {
+      throw new Error('Failed to update publication')
+    }
+
+    return updatedPublication
+  }
+
+  /**
+   * Get regeneration history for a publication
+   */
+  public getRegenerationHistory(
+    publicationId: string,
+    agencyId: string
+  ): RegenerationHistory[] {
+    const publication = this.publicationRepo.findByIdWithContext(publicationId)
+    if (!publication) {
+      throw new Error('Publication not found')
+    }
+
+    // Validate access
+    if (
+      !this.workspaceRepo.validateAgencyOwnership(
+        publication.workspace.id,
+        agencyId
+      )
+    ) {
+      throw new Error('Access denied')
+    }
+
+    return this.getRegenerationHistoryByPublicationId(publicationId)
+  }
+
+  /**
+   * Create regeneration history record
+   */
+  private createRegenerationHistory(data: CreateRegenerationHistoryData): RegenerationHistory {
+    // This would be implemented in the repository layer
+    // For now, return a placeholder
+    const history: RegenerationHistory = {
+      id: `regen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+
+    console.log('📝 Creating regeneration history:', history)
+    // TODO: Implement actual database insertion
+    
+    return history
+  }
+
+  /**
+   * Get regeneration history by publication ID
+   */
+  private getRegenerationHistoryByPublicationId(publicationId: string): RegenerationHistory[] {
+    console.log(`📊 Getting regeneration history for publication: ${publicationId}`)
+    // TODO: Implement actual database query
+    // For now, return empty array
+    return []
+  }
+
+  /**
+   * Get regeneration statistics for workspace
+   */
+  public getRegenerationStatistics(
+    workspaceId: string,
+    agencyId: string,
+    dateRange?: { startDate: Date; endDate: Date }
+  ): {
+    totalRegenerations: number
+    regenerationsByReason: Record<string, number>
+    mostRegeneratedPublications: Array<{
+      publicationId: string
+      campaignName: string
+      regenerationCount: number
+      lastRegeneratedAt: Date
+    }>
+    regenerationTrends: Array<{
+      date: string
+      count: number
+    }>
+  } {
+    // Validate access
+    if (!this.workspaceRepo.validateAgencyOwnership(workspaceId, agencyId)) {
+      throw new Error('Workspace not found or access denied')
+    }
+
+    // TODO: Implement actual statistics calculation
+    console.log(`📊 Getting regeneration statistics for workspace: ${workspaceId}`)
+    
+    return {
+      totalRegenerations: 0,
+      regenerationsByReason: {
+        user_request: 0,
+        error_recovery: 0,
+        content_improvement: 0
+      },
+      mostRegeneratedPublications: [],
+      regenerationTrends: []
+    }
+  }
+
+  /**
+   * Get publication with full context (campaign, workspace, etc.)
+   */
+  public async getPublicationWithContext(
+    publicationId: string,
+    agencyId: string
+  ): Promise<Publication & {
+    campaign: { id: string; name: string; resources?: any[]; templates?: any[] }
+    workspace: { id: string; name: string; agencyId: string; branding: any }
+  } | null> {
+    const publication = this.publicationRepo.findByIdWithContext(publicationId)
+    if (!publication) {
+      return null
+    }
+
+    // Validate access
+    if (
+      !this.workspaceRepo.validateAgencyOwnership(
+        publication.workspace.id,
+        agencyId
+      )
+    ) {
+      throw new Error('Access denied')
+    }
+
+    return publication as any
+  }
+
+  /**
+   * Update publication generation status
+   */
+  public async updatePublicationStatus(
+    publicationId: string,
+    status: 'pending' | 'generating' | 'completed' | 'failed',
+    agencyId: string
+  ): Promise<void> {
+    const publication = this.publicationRepo.findByIdWithContext(publicationId)
+    if (!publication) {
+      throw new Error('Publication not found')
+    }
+
+    // Validate access
+    if (
+      !this.workspaceRepo.validateAgencyOwnership(
+        publication.workspace.id,
+        agencyId
+      )
+    ) {
+      throw new Error('Access denied')
+    }
+
+    const updateData: UpdatePublicationData = {
+      generationStatus: status
+    }
+
+    this.publicationRepo.update(publicationId, updateData)
+  }
+
+  /**
+   * Get publication by ID with access validation
+   */
+  public async getPublicationById(
+    publicationId: string,
+    agencyId: string
+  ): Promise<Publication | null> {
+    const publication = this.publicationRepo.findByIdWithContext(publicationId)
+    if (!publication) {
+      return null
+    }
+
+    // Validate access
+    if (
+      !this.workspaceRepo.validateAgencyOwnership(
+        publication.workspace.id,
+        agencyId
+      )
+    ) {
+      throw new Error('Access denied')
+    }
+
+    return publication
   }
 }

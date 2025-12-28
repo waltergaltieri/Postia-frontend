@@ -15,6 +15,7 @@ export interface AIError extends Error {
   statusCode?: number
   retryable: boolean
   details?: Record<string, any>
+  cause?: Error
 }
 
 export interface RetryConfig {
